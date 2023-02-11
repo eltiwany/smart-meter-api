@@ -18,8 +18,8 @@ class AutoDataLossesSeeder extends Seeder
      */
     public function run()
     {
-        $user_board_token = "J7UbqPLTdeTXXc3T";
-        $random_values_per_sensor = 200;
+        $user_board_token = "6GdSpeOXgsbYDT8t";
+        $random_values_per_sensor = 500;
 
         $user_board = UserBoard::where('token', $user_board_token)->first();
 

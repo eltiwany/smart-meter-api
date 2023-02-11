@@ -16,7 +16,7 @@ class AutoSensorSeeder extends Seeder
      */
     public function run()
     {
-        $user_board_token = "J7UbqPLTdeTXXc3T";
+        $user_board_token = "6GdSpeOXgsbYDT8t";
         $user_board = UserBoard::where('token', $user_board_token)->first();
 
         if ($user_board) {

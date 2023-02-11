@@ -32,8 +32,8 @@ class AutoDataSeeder extends Seeder
      */
     public function run()
     {
-        $user_board_token = "J7UbqPLTdeTXXc3T";
-        $random_values_per_sensor = 500;
+        $user_board_token = "6GdSpeOXgsbYDT8t";
+        $random_values_per_sensor = 1000;
 
         $user_board = UserBoard::where('token', $user_board_token)->first();
 
@@ -47,7 +47,7 @@ class AutoDataSeeder extends Seeder
 
             foreach ($user_sensors as $user_sensor) {
                 for ($ran=0; $ran < $random_values_per_sensor; $ran++) {
-                    $date = $this->randomDate('2023-01-01', '2023-01-15');
+                    $date = $this->randomDate('2023-02-01', '2023-02-15');
 
                     // Voltage
                     array_push($data, [
