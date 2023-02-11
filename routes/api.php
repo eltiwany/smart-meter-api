@@ -8,6 +8,8 @@ use App\Http\Controllers\API\Boards\BoardsController;
 use App\Http\Controllers\API\Boards\UserBoardsController;
 use App\Http\Controllers\API\PinTypesController;
 use App\Http\Controllers\API\PreferencesController;
+use App\Http\Controllers\API\Reports\BasicReportsController;
+use App\Http\Controllers\API\Reports\SmartReportsController;
 use App\Http\Controllers\API\Sensors\SensorsController;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
 use App\Http\Controllers\API\Settings\PagesController;
@@ -75,7 +77,7 @@ Route::group([
     Route::group([
         'middleware' => [JWTAuth::class, PagesPermissions::class]
     ], function () {
-        Route::get('stats', [UserBoardsController::class, 'getStats']);
+        Route::get('stats', [BasicReportsController::class, 'getStats']);
         // Auth API's
         Route::post('get-auth', [AuthController::class, 'getAuth']);
 
@@ -106,8 +108,10 @@ Route::group([
         Route::post('get-sensor-pin-types', [SensorsController::class, 'getSensorPinTypes']);
         Route::resource('sensors', SensorsController::class);
         // -------------------------- - - - - - ----------------------------- //
+        Route::get('user-sensors-auto-added', [UserSensorsController::class, 'getAutoAddedUserSensors']);
         Route::resource('user-sensors', UserSensorsController::class);
         Route::get('get-user-sensor-values', [UserSensorsController::class, 'getUserSensorValues']);
+        Route::get('get-user-sensor-values/{id}', [UserSensorsController::class, 'getUserSensorValuesById']);
 
         // Actuators
         Route::post('get-actuators', [ActuatorsController::class, 'getActuators']);
@@ -124,6 +128,12 @@ Route::group([
         // Automations
         Route::post('get-automations', [AutomationsController::class, 'getAutomations']);
         Route::resource('automations', AutomationsController::class);
+
+        // Reports API's
+        Route::get('get-user-brief-stats', [SmartReportsController::class, 'getUserBriefStats']);
+        Route::get('get-brief-stats', [SmartReportsController::class, 'getBriefStats']);
+        Route::get('get-health-status', [SmartReportsController::class, 'getHealthStatus']);
+
 
         // Settings API's
         Route::group([

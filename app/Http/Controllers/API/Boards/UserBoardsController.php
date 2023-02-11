@@ -96,24 +96,6 @@ class UserBoardsController extends ResponsesController
 
     }
 
-    public function getStats()
-    {
-        return $this->sendResponse([
-            [
-                'name' => 'Boards',
-                'value' => UserBoard::where('user_id', auth()->user()->id)->count()
-            ],
-            [
-                'name' => 'Sensors',
-                'value' => UserSensor::where('user_id', auth()->user()->id)->count()
-            ],
-            [
-                'name' => 'Actuators',
-                'value' => UserActuator::where('user_id', auth()->user()->id)->count()
-            ],
-        ], []);
-    }
-
     public function setBoardOMC(Request $request)
     {
         $userActiveBoard = UserBoard::where('token', $request->get('token'))->first();

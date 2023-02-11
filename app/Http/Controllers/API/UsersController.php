@@ -134,6 +134,12 @@ class UsersController extends ResponsesController
         $user = new User;
         $user->name = $request->get('name');
         $user->email = $request->get('email');
+        $user->phone_number = $request->get('phone_number');
+        $user->city = $request->get('city');
+        $user->region = $request->get('region');
+        $user->district = $request->get('district');
+        $user->house_number = $request->get('house_number');
+        $user->residence_id = $request->get('residence_id');
         $user->role_id = $request->get('roleId');
         $user->password = bcrypt($request->get('password'));
         $user->is_active = 1;
@@ -164,6 +170,12 @@ class UsersController extends ResponsesController
         $user = User::find($id);
         // $user->name = $request->get('name');
         $user->email = $request->get('email');
+        $user->phone_number = $request->get('phone_number');
+        $user->city = $request->get('city');
+        $user->region = $request->get('region');
+        $user->house_number = $request->get('house_number');
+        $user->district = $request->get('district');
+        $user->residence_id = $request->get('residence_id');
         $user->role_id = $request->get('roleId');
         $user->save();
 

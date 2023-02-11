@@ -23,9 +23,22 @@ class UserSensorsController extends ResponsesController
      */
     public function index()
     {
-        $userSensors = $this->fetchAllUserSensors()->get();
+        $userSensors = $this->fetchAllUserSensors()->where('auto_added', false)->get();
         $userSensorsWithPins = $this->fetchPinNumbers($userSensors);
         $this->saveToLog('User Sensors', 'Getting list of user sensors');
+        return $this->sendResponse($userSensorsWithPins, '');
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function getAutoAddedUserSensors()
+    {
+        $userSensors = $this->fetchAllUserSensors()->where('auto_added', true)->get();
+        $userSensorsWithPins = $this->fetchPinNumbers($userSensors);
+        $this->saveToLog('User Sensors', 'Getting list of auto added user sensors');
         return $this->sendResponse($userSensorsWithPins, '');
     }
 
@@ -57,6 +70,32 @@ class UserSensorsController extends ResponsesController
             ]);
             $sensorColumnValues = [];
         }
+        return $this->sendResponse($data, []);
+    }
+
+    public function getUserSensorValuesById($id)
+    {
+        $data = [];
+        $userSensor = UserSensor::find($id);
+
+        $sensorColumnValues = [];
+        foreach($userSensor->sensor->columns as $column) {
+            array_push($sensorColumnValues, [
+                "name" => $column->column,
+                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray()
+            ]);
+        }
+        array_push($data, [
+            'sensor' => [
+                "id" => $userSensor->id,
+                "sensor_id" => $userSensor->sensor_id,
+                "user_defined_name" => $userSensor->name,
+                "name" => $userSensor->sensor->name
+            ],
+            'columns' => $sensorColumnValues
+        ]);
+        $sensorColumnValues = [];
+
         return $this->sendResponse($data, []);
     }
 
@@ -135,7 +174,7 @@ class UserSensorsController extends ResponsesController
     }
 
 
-    public function fetchAllUserSensors()
+    public static function fetchAllUserSensors()
     {
         return DB::table('user_sensors as ub')
             ->join('sensors as b', 'b.id', '=', 'ub.sensor_id')
@@ -146,6 +185,8 @@ class UserSensorsController extends ResponsesController
                             b.id as sensor_id,
                             b.name,
                             ub.name as user_defined_name,
+                            ub.threshold as threshold,
+                            ub.threshold_percentage as threshold_percentage,
                             b.description,
                             b.image_url,
                             ub.interval
@@ -286,6 +327,31 @@ class UserSensorsController extends ResponsesController
      */
     public function update(Request $request, $id)
     {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required',
+            'interval' => 'required',
+            'threshold' => 'required',
+            'threshold_percentage' => 'required',
+        ]);
+
+        if ($validator->fails())
+            return $this->sendError('Validation fails', $validator->errors(), 401);
+
+        $name = $request->get('name');
+        $threshold = $request->get('threshold');
+        $threshold_percentage = $request->get('threshold_percentage');
+        $interval = $request->get('interval');
+
+        // Save userSensor
+        $userSensor = UserSensor::find($id);
+        $userSensor->name = $name;
+        $userSensor->interval = $interval;
+        $userSensor->threshold = $threshold;
+        $userSensor->threshold_percentage = $threshold_percentage;
+        $userSensor->save();
+
+        $this->saveToLog('Sensors', 'Updated Linked Sensor with user sensor id: ' . $id);
+        return $this->sendResponse([], 'Device updated.');
     }
 
     /**

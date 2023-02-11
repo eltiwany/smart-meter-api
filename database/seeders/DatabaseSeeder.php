@@ -14,15 +14,18 @@ class DatabaseSeeder extends Seeder
     public function run()
     {
         $this->call([
-            RolesSeeder::class,
-            PagesSeeder::class,
-            PermissionsSeeder::class,
-            RolePermissionsSeeder::class,
-            UsersSeeder::class,
-            PinTypesSeeder::class,
-            BoardsSeeder::class,
-            SensorsSeeder::class,
-            ActuatorsSeeder::class,
+            // RolesSeeder::class,
+            // PagesSeeder::class,
+            // PermissionsSeeder::class,
+            // RolePermissionsSeeder::class,
+            // UsersSeeder::class,
+            // PinTypesSeeder::class,
+            // BoardsSeeder::class,
+            // SensorsSeeder::class,
+            // ActuatorsSeeder::class,
+            // AutoSensorSeeder::class,
+            // AutoDataSeeder::class,
+            AutoDataLossesSeeder::class
         ]);
     }
 }
