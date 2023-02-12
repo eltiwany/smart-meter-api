@@ -19,7 +19,7 @@ class UsersController extends ResponsesController
      */
     public function index()
     {
-        $user = User::OrderBy('email', 'asc')->get();
+        $user = $this->fetchAllUsers()->orderBy('email', 'asc')->get();
         $this->saveToLog('Users', 'Getting list of users');
         return $this->sendResponse($user, '');
     }
@@ -110,7 +110,9 @@ class UsersController extends ResponsesController
     {
         return DB::table('users as u')
             ->join('roles as r', 'r.id', '=', 'u.role_id')
-            ->selectRaw('u.*, r.name as role_name, u.name as full_name');
+            ->leftJoin('user_boards as ub', 'ub.user_id', '=', 'u.id')
+            ->leftJoin('boards as b', 'ub.board_id', '=', 'b.id')
+            ->selectRaw('u.*, ub.id as board_id, b.name as board_name, ub.token, r.name as role_name, u.name as full_name');
     }
 
     /**
