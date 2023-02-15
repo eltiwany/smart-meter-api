@@ -23,9 +23,9 @@ class DatabaseSeeder extends Seeder
             // BoardsSeeder::class,
             // SensorsSeeder::class,
             // ActuatorsSeeder::class,
-            AutoSensorSeeder::class,
-            AutoDataSeeder::class,
-            AutoDataLossesSeeder::class
+            // AutoSensorSeeder::class,
+            // AutoDataSeeder::class,
+            // AutoDataLossesSeeder::class
         ]);
     }
 }

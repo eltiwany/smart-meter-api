@@ -13,27 +13,36 @@ use Illuminate\Support\Facades\DB;
 
 class SmartReportsController extends ResponsesController
 {
-    public function getUserBriefStats()
+    public function getUserBriefStats(Request $request)
     {
+        $userId = auth()->user()->id;
+        if ($request->has("userId"))
+            $userId = $request->get("userId");
+
         return $this->sendResponse([
             [
                 'name' => 'Smart Appliances',
-                'value' => UserSensor::where(['user_id' => auth()->user()->id, 'auto_added' => true])->count()
+                'value' => UserSensor::where(['user_id' => $userId, 'auto_added' => true])->count()
             ],
             [
                 'name' => 'Average Power',
                 'si' => 'W',
-                'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")), null, auth()->user()->id)
+                'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
+            // [
+            //     'name' => 'Average Power Losses',
+            //     'si' => 'W',
+            //     'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
+            // ],
             [
                 'name' => 'Energy Used',
                 'si' => 'Wh',
-                'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, auth()->user()->id)
+                'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
             [
                 'name' => 'Earthing Losses',
                 'si' => 'A',
-                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, auth()->user()->id)[1]->average ?? 0
+                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)[1]->average ?? 0
             ],
         ], []);
     }
@@ -57,6 +66,11 @@ class SmartReportsController extends ResponsesController
                 'si' => 'W',
                 'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")))
             ],
+            // [
+            //     'name' => 'Average Power Losses',
+            //     'si' => 'W',
+            //     'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")))
+            // ],
             [
                 'name' => 'Total Power',
                 'si' => 'W',
@@ -75,8 +89,12 @@ class SmartReportsController extends ResponsesController
         ], []);
     }
 
-    public function getHealthStatus()
+    public function getHealthStatus(Request $request)
     {
+        $userId = auth()->user()->id;
+        if ($request->has("userId"))
+            $userId = $request->get("userId");
+
         $statuses = [];
         $userSensors = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)->where('b.name', 'not like', '%loss sensor%')->get();
         $yesterday = date('Y-m-d',strtotime("-1 days"));
@@ -85,16 +103,16 @@ class SmartReportsController extends ResponsesController
         $last_month = date('Y-m-d',strtotime("-30 days"));
 
         foreach ($userSensors as $sensor) {
-            $av = $this->getAvgPower($yesterday, $sensor->id, auth()->user()->id);
+            $av = $this->getAvgPower($yesterday, $sensor->id, $userId);
             $power1 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
 
-            $av = $this->getAvgPower($last_week, $sensor->id, auth()->user()->id);
+            $av = $this->getAvgPower($last_week, $sensor->id, $userId);
             $power2 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
 
-            $av = $this->getAvgPower($last_two_weeks, $sensor->id, auth()->user()->id);
+            $av = $this->getAvgPower($last_two_weeks, $sensor->id, $userId);
             $power3 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
 
-            $av = $this->getAvgPower($last_month, $sensor->id, auth()->user()->id);
+            $av = $this->getAvgPower($last_month, $sensor->id, $userId);
             $power4 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
 
             array_push($statuses, [
@@ -111,6 +129,44 @@ class SmartReportsController extends ResponsesController
         return $this->sendResponse($statuses, "");
     }
 
+
+    public function getAvgPowerLosses($date, $userSensorId = null, $userId = null)
+    {
+        // $data = DB::table('user_sensor_values as usv')
+        //     ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
+        //     ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
+        //     ->selectRaw('avg(value) as average, sc.column as name')
+        //     ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
+
+        $data = DB::table('user_sensor_values as usv')
+            ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
+            ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
+            ->selectRaw('
+                    (
+                        case when
+                        (case when row_number() over (order by t) >= 12
+                            then avg(sales) over (order by t range between 12 preceding and current row
+                        end) is null then 0 else
+                        (case when row_number() over (order by t) >= 12
+                            then avg(sales) over (order by t range between 12 preceding and current row
+                        end) end
+                    ) as average
+                    , sc.column as name
+            ')
+            ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
+
+
+        if ($userSensorId)
+            $data = $data->where('us.id', $userSensorId);
+
+        if ($userId)
+            $data = $data->where('us.user_id', $userId);
+
+        $data = $data->groupBy('usv.sensor_column_id')
+        ->get();
+
+        return $data;
+    }
 
     public function getAvgPower($date, $userSensorId = null, $userId = null)
     {

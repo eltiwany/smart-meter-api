@@ -6,12 +6,16 @@ use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\API\AutomationsController;
 use App\Http\Controllers\API\Boards\BoardsController;
 use App\Http\Controllers\API\Boards\UserBoardsController;
+use App\Http\Controllers\API\DocumentsController;
+use App\Http\Controllers\API\MessagesController;
+use App\Http\Controllers\API\NotificationsController;
 use App\Http\Controllers\API\PinTypesController;
 use App\Http\Controllers\API\PreferencesController;
 use App\Http\Controllers\API\Reports\BasicReportsController;
 use App\Http\Controllers\API\Reports\SmartReportsController;
 use App\Http\Controllers\API\Sensors\SensorsController;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
+use App\Http\Controllers\API\ServiceDocumentsController;
 use App\Http\Controllers\API\Settings\PagesController;
 use App\Http\Controllers\API\Settings\PermissionsController;
 use App\Http\Controllers\API\Settings\RolesController;
@@ -19,6 +23,7 @@ use App\Http\Controllers\API\UsersController;
 use App\Http\Middleware\API\JWTAuth;
 use App\Http\Middleware\API\PagesPermissions;
 use App\Http\Middleware\Token;
+use App\Models\Message;
 use Illuminate\Http\Request as HttpRequest;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
@@ -86,8 +91,11 @@ Route::group([
             'prefix' => 'my-area'
         ], function () {
             Route::post('change-password', [AuthController::class, 'changePassword']);
-        });
 
+            // Service Documents
+            Route::post('get-service-documents', [ServiceDocumentsController::class, 'getDocuments']);
+            Route::resource('service-documents', ServiceDocumentsController::class);
+        });
 
         // Anonymous Users
         Route::post('get-users', [UsersController::class, 'getUsers']);
@@ -95,6 +103,11 @@ Route::group([
         Route::post('clear-user-logs', [UsersController::class, 'clearUserLogs']);
         Route::post('reset-password', [UsersController::class, 'reset']);
         Route::resource('users', UsersController::class);
+
+        // Notifications
+        Route::post('notifications', [NotificationsController::class, 'sendNotifications']);
+        Route::post('get-messages', [MessagesController::class, 'getMessages']);
+        Route::resource('messages', MessagesController::class);
 
         // Boards
         Route::post('get-boards', [BoardsController::class, 'getBoards']);
@@ -156,6 +169,10 @@ Route::group([
         Route::group([
             'prefix' => 'settings'
         ], function () {
+            // Documents
+            Route::post('get-documents', [DocumentsController::class, 'getDocuments']);
+            Route::resource('documents', DocumentsController::class);
+
             // Page Access
             Route::resource('pages', PagesController::class);
             Route::post('get-pages', [PagesController::class, 'getPages']);

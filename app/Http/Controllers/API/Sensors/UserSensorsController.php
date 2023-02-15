@@ -79,10 +79,25 @@ class UserSensorsController extends ResponsesController
         $userSensor = UserSensor::find($id);
 
         $sensorColumnValues = [];
+        $sensorColumnLossValues = [];
         foreach($userSensor->sensor->columns as $column) {
             array_push($sensorColumnValues, [
                 "name" => $column->column,
-                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray()
+                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
+            ]);
+
+            array_push($sensorColumnLossValues, [
+                "name" => $column->column,
+                "data" => DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            (
+                                case when
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                            ) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    ->limit(50)->pluck('diff')->toArray()
             ]);
         }
         array_push($data, [
@@ -92,7 +107,8 @@ class UserSensorsController extends ResponsesController
                 "user_defined_name" => $userSensor->name,
                 "name" => $userSensor->sensor->name
             ],
-            'columns' => $sensorColumnValues
+            'columns' => $sensorColumnValues,
+            'loss_columns' => $sensorColumnLossValues,
         ]);
         $sensorColumnValues = [];
 
