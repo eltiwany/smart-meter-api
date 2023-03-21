@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class SensorColumn extends Model
 {
     use HasFactory;
+
+    public function sensor()
+    {
+        return $this->belongsTo(Sensor::class, 'sensor_id');
+    }
 }

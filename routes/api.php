@@ -13,6 +13,7 @@ use App\Http\Controllers\API\PinTypesController;
 use App\Http\Controllers\API\PreferencesController;
 use App\Http\Controllers\API\Reports\BasicReportsController;
 use App\Http\Controllers\API\Reports\SmartReportsController;
+use App\Http\Controllers\API\SeedController;
 use App\Http\Controllers\API\Sensors\SensorsController;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
 use App\Http\Controllers\API\ServiceDocumentsController;
@@ -41,8 +42,8 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('migrate', function() {
-    Artisan::call('migrate');
-    Artisan::call('db:seed');
+    // Artisan::call('migrate');
+    // Artisan::call('db:seed');
     return response()->json(Artisan::output());
 });
 
@@ -146,6 +147,7 @@ Route::group([
         Route::get('get-user-brief-stats', [SmartReportsController::class, 'getUserBriefStats']);
         Route::get('get-brief-stats', [SmartReportsController::class, 'getBriefStats']);
         Route::get('get-health-status', [SmartReportsController::class, 'getHealthStatus']);
+        Route::get('get-total-losses', [SmartReportsController::class, 'getUserTotalLosses']);
 
 
         // Settings API's
@@ -184,6 +186,14 @@ Route::group([
             // Permissions
             Route::resource('permissions', PermissionsController::class);
             Route::post('get-permissions', [PermissionsController::class, 'getPermissions']);
+        });
+
+        // Seending API's
+        Route::group([
+            'prefix' => 'seed'
+        ], function () {
+            // Smart Meter
+            Route::post('smart-meter', [SeedController::class, 'smartMeter']);
         });
     });
 

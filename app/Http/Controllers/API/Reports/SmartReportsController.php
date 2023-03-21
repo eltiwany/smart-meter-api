@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Reports;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ResponsesController;
+use App\Models\SensorColumn;
 use App\Models\UserBoard;
 use App\Models\UserSensor;
 use App\Models\UserSensorValue;
@@ -66,11 +67,6 @@ class SmartReportsController extends ResponsesController
                 'si' => 'W',
                 'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")))
             ],
-            // [
-            //     'name' => 'Average Power Losses',
-            //     'si' => 'W',
-            //     'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")))
-            // ],
             [
                 'name' => 'Total Power',
                 'si' => 'W',
@@ -85,6 +81,16 @@ class SmartReportsController extends ResponsesController
                 'name' => 'Earthing Losses',
                 'si' => 'A',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")))[1]->average ?? 0
+            ],
+            [
+                'name' => 'Total Power Losses (Past 24hrs)',
+                'si' => 'W',
+                'value' => $this->getSumPowerLosses(date('Y-m-d',strtotime("-1 days")))
+            ],
+            [
+                'name' => 'Total Power Losses (Since Beginning)',
+                'si' => 'W',
+                'value' => $this->getSumPowerLosses()
             ],
         ], []);
     }
@@ -248,5 +254,105 @@ class SmartReportsController extends ResponsesController
             ->get();
 
         return $data;
+    }
+
+    public function getUserTotalLosses()
+    {
+        $data = [];
+
+        $columns = SensorColumn::whereHas('sensor', function($query) {
+            $query->where('name', 'like', '%Smart Plug%');
+        })
+        ->groupBy('column')
+        ->get();
+
+        $sensorColumnValues = [];
+        $sensorColumnLossValues = [];
+        foreach($columns as $column) {
+            array_push($sensorColumnValues, [
+                "name" => $column->column,
+                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
+                "sum" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->sum('value'),
+            ]);
+
+            array_push($sensorColumnLossValues, [
+                "name" => $column->column,
+                "data" => DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            (
+                                case when
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                            ) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    // ->groupBy('usv.user_sensor_id')
+                    ->limit(50)
+                    ->pluck('diff')
+                    ->toArray(),
+                "sum" => array_sum(
+                    DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            (
+                                case when
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                            ) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    ->pluck('diff')
+                    ->toArray())
+            ]);
+        }
+        array_push($data, [
+            'sensor' => [
+                "sensor_id" => $column->sensor->id,
+                "name" => $column->sensor->name
+            ],
+            'columns' => $sensorColumnValues,
+            'loss_columns' => $sensorColumnLossValues,
+        ]);
+        $sensorColumnValues = [];
+
+        return $this->sendResponse($data, []);
+    }
+
+    public function getSumPowerLosses($date = null)
+    {
+
+        $columns = SensorColumn::whereHas('sensor', function($query) {
+            $query->where('name', 'like', '%Smart Plug%');
+        })
+        ->groupBy('column')
+        ->get();
+
+        $va = [];
+
+        foreach($columns as $column) {
+
+            $data = DB::table('user_sensor_values as usv')
+            ->selectRaw('
+                    (
+                        case when
+                        abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                        abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                    ) as diff,
+                    usv.created_at as created_at
+            ')
+            ->where(['sensor_column_id' => $column->id]);
+
+            if (!is_null($date))
+                        $data = $data
+                        ->whereRaw('date(usv.created_at) >= ?', [$date]);
+
+            array_push($va,
+                array_sum(
+                    $data
+                    ->pluck('diff')
+                    ->toArray())
+            );
+        }
+
+        return sizeof($columns) === 2 ? $va[0] * $va[1] : 0;
     }
 }
