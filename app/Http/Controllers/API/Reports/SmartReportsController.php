@@ -92,6 +92,13 @@ class SmartReportsController extends ResponsesController
                 'si' => 'W',
                 'value' => $this->getSumPowerLosses()
             ],
+            [
+                'name' => 'Actual Power',
+                'si' => 'W',
+                'value' => (sizeof($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))) > 0 ? ($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[0]->average * $this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[1]->average) : 0)
+                            - $this->getSumPowerLosses(date('Y-m-d',strtotime("-1 days")))
+                            - (230 * ($this->getLosses(date('Y-m-d',strtotime("-1 days")))[1]->average ?? 0))
+            ],
         ], []);
     }
 
