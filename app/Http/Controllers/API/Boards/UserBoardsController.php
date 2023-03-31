@@ -358,13 +358,14 @@ class UserBoardsController extends ResponsesController
             return $this->sendError('Validation fails', $validator->errors(), 401);
 
         $userId = $request->get('userId');
+        // return $this->sendError($userId, [], 400);
 
         $userId = $userId ?? auth()->user()->id;
         $boardId = $request->get('boardId');
         $token = $request->get('token');
 
         // Save userBoard
-        if (UserBoard::where('user_id', auth()->user()->id)->exists())
+        if (UserBoard::where('user_id', $userId)->exists())
             $userBoard = UserBoard::where('user_id', $userId)->first();
         else
             $userBoard = new UserBoard;
