@@ -357,7 +357,9 @@ class UserBoardsController extends ResponsesController
         if ($validator->fails())
             return $this->sendError('Validation fails', $validator->errors(), 401);
 
-        $userId = $request->has('userId') ? $request->get('userId') : auth()->user()->id;
+        $userId = $request->get('userId');
+
+        $userId = $userId ?? auth()->user()->id;
         $boardId = $request->get('boardId');
         $token = $request->get('token');
 
