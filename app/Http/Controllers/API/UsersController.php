@@ -187,7 +187,7 @@ class UsersController extends ResponsesController
 
 
     /**
-     * Reset users password.
+     * Reset users password and activate the account.
      *
      * @param  int  $id
      * @return \Illuminate\Http\Response
@@ -205,7 +205,8 @@ class UsersController extends ResponsesController
 
         // Below two columns are in-effect if user is blocked
         $user->incorrect_login_attempt = 0;
-        $user->is_active = 0;
+        // Activate the account
+        $user->is_active = 1;
 
         $user->password = bcrypt('user12345');
         $user->save();
