@@ -29,6 +29,29 @@ class UserSensorsController extends ResponsesController
         return $this->sendResponse($userSensorsWithPins, '');
     }
 
+    public function switchSmartActuator(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'userSensorId' => 'required',
+            'isSwitchedOn' => 'required',
+        ]);
+
+        if ($validator->fails())
+            return $this->sendError('Validation fails', $validator->errors(), 401);
+
+        $userSensorId = $request->get('userSensorId');
+        $isSwitchedOn = $request->get('isSwitchedOn');
+
+        // Save userSensor
+        $userSensor = UserSensor::find($userSensorId);
+        $name = $userSensor->sensor->name;
+        $userSensor->is_switched_on = $isSwitchedOn;
+        $userSensor->save();
+
+        $this->saveToLog('Control Smart Appliance', 'Smart Appliance: ' . $name . ' has been turned ' . ($isSwitchedOn ? 'on' : 'off'));
+        return $this->sendResponse([], 'Smart Appliance: ' . $name . ' has been turned ' . ($isSwitchedOn ? 'on' : 'off'));
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -73,17 +96,41 @@ class UserSensorsController extends ResponsesController
         return $this->sendResponse($data, []);
     }
 
-    public function getUserSensorValuesById($id)
+    public function filterArea(Request $request, UserSensor $userSensor) {
+        if ($district = $request->get('district'))
+            $userSensor = $userSensor->whereHas('users', function ($query) use ($district) {
+                $query->where('district', $district);
+            })->get();
+
+        if ($region = $request->get('region'))
+            $userSensor = $userSensor->whereHas('users', function ($query) use ($region) {
+                $query->where('region', $region);
+            })->get();
+
+        if ($city = $request->get('city'))
+            $userSensor = $userSensor->whereHas('users', function ($query) use ($city) {
+                $query->where('city', $city);
+            })->get();
+    }
+
+    public function getUserSensorValuesByArea(Request $request)
     {
         $data = [];
-        $userSensor = UserSensor::find($id);
+
+        $columns = SensorColumn::whereHas('sensor', function($query) {
+            $query->where('name', 'like', '%Smart Plug%');
+        })
+        ->groupBy('column')
+        ->get();
 
         $sensorColumnValues = [];
         $sensorColumnLossValues = [];
-        foreach($userSensor->sensor->columns as $column) {
+        foreach($columns as $column) {
             array_push($sensorColumnValues, [
                 "name" => $column->column,
                 "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
+                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('created_at as diff')->orderByRaw("created_at desc")->limit(50)->pluck('diff')->toArray(),
+                "sum" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->sum('value'),
             ]);
 
             array_push($sensorColumnLossValues, [
@@ -97,7 +144,84 @@ class UserSensorsController extends ResponsesController
                             ) as diff
                     ')
                     ->where(['sensor_column_id' => $column->id])
-                    ->limit(50)->pluck('diff')->toArray()
+                    // ->groupBy('usv.user_sensor_id')
+                    ->limit(50)
+                    ->pluck('diff')
+                    ->toArray(),
+                "time" => DB::table('user_sensor_values as usv')
+                    ->selectRaw('created_at as diff')
+                    ->where(['sensor_column_id' => $column->id])
+                    // ->groupBy('usv.user_sensor_id')
+                    ->limit(50)
+                    ->orderByRaw("created_at desc")
+                    ->pluck('diff')
+                    ->toArray(),
+                "sum" => array_sum(
+                    DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            (
+                                case when
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                            ) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    ->pluck('diff')
+                    ->toArray())
+            ]);
+        }
+        array_push($data, [
+            'sensor' => [
+                "sensor_id" => $column->sensor->id,
+                "name" => $column->sensor->name
+            ],
+            'columns' => $sensorColumnValues,
+            'loss_columns' => $sensorColumnLossValues,
+        ]);
+        $sensorColumnValues = [];
+
+        return $this->sendResponse($data, []);
+
+    }
+
+    public function getUserSensorValuesById($id)
+    {
+        $data = [];
+        $userSensor = UserSensor::find($id);
+
+        $sensorColumnValues = [];
+        $sensorColumnLossValues = [];
+        foreach($userSensor->sensor->columns as $column) {
+            array_push($sensorColumnValues, [
+                "name" => $column->column,
+                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
+                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('hour(created_at) as diff')->orderByRaw("hour('created_at') desc")->limit(50)->pluck('diff')->toArray(),
+            ]);
+
+            array_push($sensorColumnLossValues, [
+                "name" => $column->column,
+
+                "data" => DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            (
+                                case when
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                            ) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    ->limit(50)->pluck('diff')->toArray(),
+
+                "time" => DB::table('user_sensor_values as usv')
+                        ->selectRaw('
+                                hour(created_at) as diff
+                        ')
+                        ->where(['sensor_column_id' => $column->id])
+                        // ->groupBy('usv.user_sensor_id')
+                        ->limit(50)
+                        ->orderByRaw("hour('created_at') desc")
+                        ->pluck('diff')
+                        ->toArray(),
             ]);
         }
         array_push($data, [
@@ -202,6 +326,8 @@ class UserSensorsController extends ResponsesController
                             b.name,
                             ub.name as user_defined_name,
                             ub.threshold as threshold,
+                            ub.is_switched_on,
+                            ub.is_active_low,
                             ub.threshold_percentage as threshold_percentage,
                             b.description,
                             b.image_url,

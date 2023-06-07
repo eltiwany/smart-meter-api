@@ -279,6 +279,7 @@ class SmartReportsController extends ResponsesController
             array_push($sensorColumnValues, [
                 "name" => $column->column,
                 "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
+                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('hour(created_at) as diff')->orderByRaw("hour('created_at') desc")->limit(50)->pluck('diff')->toArray(),
                 "sum" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->sum('value'),
             ]);
 
@@ -295,6 +296,16 @@ class SmartReportsController extends ResponsesController
                     ->where(['sensor_column_id' => $column->id])
                     // ->groupBy('usv.user_sensor_id')
                     ->limit(50)
+                    ->pluck('diff')
+                    ->toArray(),
+                "time" => DB::table('user_sensor_values as usv')
+                    ->selectRaw('
+                            hour(created_at) as diff
+                    ')
+                    ->where(['sensor_column_id' => $column->id])
+                    // ->groupBy('usv.user_sensor_id')
+                    ->limit(50)
+                    ->orderByRaw("hour('created_at') desc")
                     ->pluck('diff')
                     ->toArray(),
                 "sum" => array_sum(

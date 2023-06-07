@@ -13,6 +13,7 @@ use App\Http\Controllers\API\PinTypesController;
 use App\Http\Controllers\API\PreferencesController;
 use App\Http\Controllers\API\Reports\BasicReportsController;
 use App\Http\Controllers\API\Reports\SmartReportsController;
+use App\Http\Controllers\API\ResourcesController;
 use App\Http\Controllers\API\SeedController;
 use App\Http\Controllers\API\Sensors\SensorsController;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
@@ -105,6 +106,13 @@ Route::group([
         Route::post('reset-password', [UsersController::class, 'reset']);
         Route::resource('users', UsersController::class);
 
+        // Resources
+        Route::get('get-regions', [ResourcesController::class, 'getRegions']);
+        Route::get('get-districts', [ResourcesController::class, 'getDistricts']);
+        Route::get('get-cities', [ResourcesController::class, 'getCities']);
+        Route::get('get-user-resources', [ResourcesController::class, 'getUserResources']);
+        Route::post('get-area-reports', [UserSensorsController::class, 'getUserSensorValuesByArea']);
+
         // Notifications
         Route::post('notifications', [NotificationsController::class, 'sendNotifications']);
         Route::post('get-messages', [MessagesController::class, 'getMessages']);
@@ -122,6 +130,7 @@ Route::group([
         Route::post('get-sensor-pin-types', [SensorsController::class, 'getSensorPinTypes']);
         Route::resource('sensors', SensorsController::class);
         // -------------------------- - - - - - ----------------------------- //
+        Route::post('switch-smart-actuator', [UserSensorsController::class, 'switchSmartActuator']);
         Route::get('user-sensors-auto-added', [UserSensorsController::class, 'getAutoAddedUserSensors']);
         Route::resource('user-sensors', UserSensorsController::class);
         Route::get('get-user-sensor-values', [UserSensorsController::class, 'getUserSensorValues']);
