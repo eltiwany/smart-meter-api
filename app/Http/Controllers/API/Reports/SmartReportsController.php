@@ -22,6 +22,11 @@ class SmartReportsController extends ResponsesController
 
         return $this->sendResponse([
             [
+                'name' => 'Energy Used',
+                'si' => 'Wh',
+                'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $userId)
+            ],
+            [
                 'name' => 'Smart Appliances',
                 'value' => UserSensor::where(['user_id' => $userId, 'auto_added' => true])->count()
             ],
@@ -35,11 +40,6 @@ class SmartReportsController extends ResponsesController
             //     'si' => 'W',
             //     'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
             // ],
-            [
-                'name' => 'Energy Used',
-                'si' => 'Wh',
-                'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $userId)
-            ],
             [
                 'name' => 'Earthing Losses',
                 'si' => 'A',
