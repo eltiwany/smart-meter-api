@@ -207,11 +207,11 @@ class SmartReportsController extends ResponsesController
 
             $data = [
                 [
-                    'average' => $v/$c,
+                    'average' => $c == 0 ? 0 : $v/$c,
                     'name' => 'V'
                 ],
                 [
-                    'average' => $a/$c,
+                    'average' => $c == 0 ? 0 : $a/$c,
                     'name' => 'A'
                 ],
             ];
