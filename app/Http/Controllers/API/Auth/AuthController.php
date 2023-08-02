@@ -51,11 +51,11 @@ class AuthController extends ResponsesController
         } else {
             $user = Auth::user();
             // Check if user is blocked
-            if (!$user->is_active && $user->incorrect_login_attempt >= 3)
-                return $this->sendError('Your account is blocked, please contact system administrator!', ['error' => 'Unauthorised'], 401);
+            // if (!$user->is_active && $user->incorrect_login_attempt >= 3)
+                // return $this->sendError('Your account is blocked, please contact system administrator!', ['error' => 'Unauthorised'], 401);
             // Check if user is not active
-            else if (!$user->is_active)
-                return $this->sendError('Your account is not active, please activate your account!', ['error' => 'Unauthorised'], 401);
+            // else if (!$user->is_active)
+            //     return $this->sendError('Your account is not active, please activate your account!', ['error' => 'Unauthorised'], 401);
 
             $rolePermissions = $user->role->role_permission;
             $permissions = [];
