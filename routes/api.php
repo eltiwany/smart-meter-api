@@ -21,6 +21,7 @@ use App\Http\Controllers\API\ServiceDocumentsController;
 use App\Http\Controllers\API\Settings\PagesController;
 use App\Http\Controllers\API\Settings\PermissionsController;
 use App\Http\Controllers\API\Settings\RolesController;
+use App\Http\Controllers\API\SmartSchedulerController;
 use App\Http\Controllers\API\UsersController;
 use App\Http\Middleware\API\JWTAuth;
 use App\Http\Middleware\API\PagesPermissions;
@@ -152,11 +153,16 @@ Route::group([
         Route::post('get-automations', [AutomationsController::class, 'getAutomations']);
         Route::resource('automations', AutomationsController::class);
 
+        // Schedulers
+        Route::post('get-schedulers', [SmartSchedulerController::class, 'getSchedulers']);
+        Route::resource('schedulers', SmartSchedulerController::class);
+
         // Reports API's
         Route::get('get-user-brief-stats', [SmartReportsController::class, 'getUserBriefStats']);
         Route::get('get-brief-stats', [SmartReportsController::class, 'getBriefStats']);
         Route::get('get-health-status', [SmartReportsController::class, 'getHealthStatus']);
         Route::get('get-total-losses', [SmartReportsController::class, 'getUserTotalLosses']);
+        Route::get('get-map-user-summary', [SmartReportsController::class, 'getMapUserSummary']);
 
 
         // Settings API's

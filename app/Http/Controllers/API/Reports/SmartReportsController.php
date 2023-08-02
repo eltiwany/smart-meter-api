@@ -6,6 +6,7 @@ use App\Http\Controllers\API\Sensors\UserSensorsController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ResponsesController;
 use App\Models\SensorColumn;
+use App\Models\User;
 use App\Models\UserBoard;
 use App\Models\UserSensor;
 use App\Models\UserSensorValue;
@@ -35,17 +36,42 @@ class SmartReportsController extends ResponsesController
                 'si' => 'W',
                 'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
-            // [
-            //     'name' => 'Average Power Losses',
-            //     'si' => 'W',
-            //     'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
-            // ],
+            [
+                'name' => 'Average Power Losses',
+                'si' => 'W',
+                'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
+            ],
             [
                 'name' => 'Earthing Losses',
                 'si' => 'A',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)[1]->average ?? 0
             ],
         ], []);
+    }
+
+    public function getMapUserSummary()
+    {
+        $users = User::where('coordinates', '!=', null)
+        ->join('user_boards as ub', 'users.id', '=', 'ub.user_id')
+        ->selectRaw('users.*, ub.token')
+        ->get();
+        //->where('district', '!=', null)->where('region', '!=', null)->where('house_number', '!=', null)->get();
+        $users_with_power = [];
+        foreach($users as $user) {
+            $energy = $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $user->id);
+            $power = $this->getAvgPower(date('Y-m-d',strtotime("-1 days")), null, $user->id);
+            $losses = $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $user->id)[1]->average ?? 0;
+            $powerlosses = $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $user->id);
+            $users_with_power[] = [
+                'user' => $user,
+                'energy' => $energy,
+                'power' => $power,
+                'losses' => $losses,
+                'powerlosses' => $powerlosses,
+            ];
+        }
+
+        return $this->sendResponse($users_with_power, 'Success');
     }
 
     public function getBriefStats()
@@ -145,40 +171,53 @@ class SmartReportsController extends ResponsesController
 
     public function getAvgPowerLosses($date, $userSensorId = null, $userId = null)
     {
-        // $data = DB::table('user_sensor_values as usv')
-        //     ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
-        //     ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
-        //     ->selectRaw('avg(value) as average, sc.column as name')
-        //     ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
 
         $data = DB::table('user_sensor_values as usv')
             ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
             ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
             ->selectRaw('
-                    (
-                        case when
-                        (case when row_number() over (order by t) >= 12
-                            then avg(sales) over (order by t range between 12 preceding and current row
-                        end) is null then 0 else
-                        (case when row_number() over (order by t) >= 12
-                            then avg(sales) over (order by t range between 12 preceding and current row
-                        end) end
-                    ) as average
-                    , sc.column as name
+                (
+                    case when
+                    abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
+                    abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
+                ) as average,
+                sc.column as name
             ')
             ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
 
+            if ($userSensorId)
+                $data = $data->where('us.id', $userSensorId);
 
-        if ($userSensorId)
-            $data = $data->where('us.id', $userSensorId);
+            if ($userId)
+                $data = $data->where('us.user_id', $userId);
 
-        if ($userId)
-            $data = $data->where('us.user_id', $userId);
+            $data = $data//->groupBy('usv.sensor_column_id')
+            ->get();
 
-        $data = $data->groupBy('usv.sensor_column_id')
-        ->get();
+            $v = 0;
+            $a = 0;
+            $c = 0;
+            foreach($data as $value) {
+                if ($value->name == 'V')
+                    $v += $value->average;
+                else
+                    $a += $value->average;
+                $c+=0.5;
+            }
+
+            $data = [
+                [
+                    'average' => $v/$c,
+                    'name' => 'V'
+                ],
+                [
+                    'average' => $a/$c,
+                    'name' => 'A'
+                ],
+            ];
 
         return $data;
+
     }
 
     public function getAvgPower($date, $userSensorId = null, $userId = null)

@@ -33,12 +33,13 @@ class ServiceDocumentsController extends ResponsesController
         // Datatable search & pagination parameters
         $dt = $this->dtResponse($request);
         $searchValue = $dt->searchValue;
+        $allDocs = $request->get('allDocs') ?? false;
 
-        $totalRecords = count($this->fetchServiceDocuments()->get());
+        $totalRecords = count($this->fetchServiceDocuments($allDocs)->get());
 
         $totalRecordswithFilter =
             count(
-                $this->fetchServiceDocuments()
+                $this->fetchServiceDocuments($allDocs)
                 ->where(function ($query) use ($searchValue) {
                     $query
                         ->where('d.name', 'like', '%' . $searchValue . '%')
@@ -47,7 +48,7 @@ class ServiceDocumentsController extends ResponsesController
             );
 
         // Fetch records
-        $records = $this->fetchServiceDocuments()
+        $records = $this->fetchServiceDocuments($allDocs)
                 ->where(function ($query) use ($searchValue) {
                     $query
                         ->where('d.name', 'like', '%' . $searchValue . '%')
@@ -102,18 +103,27 @@ class ServiceDocumentsController extends ResponsesController
         return $this->sendResponse([], 'Service document has been uploaded!');
     }
 
-    public static function fetchServiceDocuments()
+    public static function fetchServiceDocuments($allDocs = false)
     {
-        return DB::table('service_documents as sd')
+        $report = DB::table('service_documents as sd')
             ->join('documents as d', 'd.id', '=', 'sd.document_id')
+            ->join('users as u', 'u.id', '=', 'sd.user_id')
             ->selectRaw('
                             sd.id,
                             d.id as document_id,
                             d.name,
+                            u.name as full_name,
+                            u.email,
+                            u.phone_number,
                             d.description,
-                            sd.file_path
-            ')
-            ->whereRaw('sd.user_id = ?', [ auth()->user()->id ]);
+                            sd.file_path,
+                            sd.created_at
+            ');
+
+        if (!$allDocs)
+            $report = $report->whereRaw('sd.user_id = ?', [ auth()->user()->id ]);
+
+        return $report;
     }
 
     /**
@@ -169,5 +179,5 @@ class ServiceDocumentsController extends ResponsesController
         return $this->sendResponse([], 'Document has been deleted!');
     }
 
-    
+
 }

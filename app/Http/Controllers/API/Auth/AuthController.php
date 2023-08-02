@@ -35,17 +35,18 @@ class AuthController extends ResponsesController
 
         if (!auth()->attempt($credentials)) {
             // Set incorrect attempt and block if attempts reached 3 times
-            if (User::where('email', $request->get('email'))->exists() && $request->get('email') != 'admin@nafuutronics.com' && $request->get('email') != 'admin@konekted.com') {
-                $user = User::where('email', $request->get('email'))->first();
-                $incorrectAttempt = $user->incorrect_login_attempt + 1;
-                $user->incorrect_login_attempt = $incorrectAttempt;
-                if ($incorrectAttempt >= 3)
-                    $user->is_active = 0;
-                $user->save();
-                // Show the user that they are blocked
-                if ($incorrectAttempt >= 3)
-                    return $this->sendError('Your account is blocked, please contact system administrator!', ['error' => 'Unauthorised'], 401);
-            }
+
+            // if (User::where('email', $request->get('email'))->exists() && $request->get('email') != 'admin@nafuutronics.com' && $request->get('email') != 'admin@konekted.com') {
+            //     $user = User::where('email', $request->get('email'))->first();
+            //     $incorrectAttempt = $user->incorrect_login_attempt + 1;
+            //     $user->incorrect_login_attempt = $incorrectAttempt;
+            //     if ($incorrectAttempt >= 3)
+            //         $user->is_active = 0;
+            //     $user->save();
+            //     // Show the user that they are blocked
+            //     if ($incorrectAttempt >= 3)
+            //         return $this->sendError('Your account is blocked, please contact system administrator!', ['error' => 'Unauthorised'], 401);
+            // }
             return $this->sendError('Invalid Email and/or Password.', ['error' => 'Unauthorised'], 401);
         } else {
             $user = Auth::user();

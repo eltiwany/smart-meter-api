@@ -18,6 +18,10 @@ class SeedController extends ResponsesController
 {
     private $start_date;
     private $end_date;
+    private $minVoltage = 219;
+    private $maxVoltage = 222;
+    private $minCurrent = 2;
+    private $maxCurrent = 4;
 
     public function smartMeter(Request $request)
     {
@@ -85,7 +89,7 @@ class SeedController extends ResponsesController
         $user_sensors = UserSensor::whereHas('sensor', function($query) {
             $query->where('name', 'like', '%Smart Plug%');
         })->where('user_board_id', $user_board->id)->get();
-        
+
         foreach ($user_sensors as $user_sensor) {
             for ($ran=0; $ran < $random_values_per_sensor; $ran++) {
                 $date = $this->randomDate($this->start_date, $this->end_date);
@@ -94,7 +98,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[0],
-                    'value' => rand(199, 230),
+                    'value' => rand($this->minVoltage, $this->maxVoltage),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -103,7 +107,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[1],
-                    'value' => rand(2, 25),
+                    'value' => rand($this->minCurrent, $this->maxCurrent),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -153,7 +157,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[0],
-                    'value' => rand(199, 230),
+                    'value' => rand($this->minVoltage, $this->maxVoltage),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -162,7 +166,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[1],
-                    'value' => rand(2, 25),
+                    'value' => rand($this->minCurrent, $this->maxCurrent),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);

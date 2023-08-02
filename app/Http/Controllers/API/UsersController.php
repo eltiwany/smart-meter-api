@@ -142,6 +142,7 @@ class UsersController extends ResponsesController
         $user->district = $request->get('district');
         $user->house_number = $request->get('house_number');
         $user->residence_id = $request->get('residence_id');
+        $user->coordinates = $request->get('coordinates');
         $user->role_id = $request->get('roleId');
         $user->password = bcrypt($request->get('password'));
         $user->is_active = 1;
@@ -170,7 +171,7 @@ class UsersController extends ResponsesController
             return $this->sendError('Validation fails', $validator->errors(), 401);
 
         $user = User::find($id);
-        // $user->name = $request->get('name');
+        $user->name = $request->get('name');
         $user->email = $request->get('email');
         $user->phone_number = $request->get('phone_number');
         $user->city = $request->get('city');
@@ -178,6 +179,7 @@ class UsersController extends ResponsesController
         $user->house_number = $request->get('house_number');
         $user->district = $request->get('district');
         $user->residence_id = $request->get('residence_id');
+        $user->coordinates = $request->get('coordinates');
         $user->role_id = $request->get('roleId');
         $user->save();
 
