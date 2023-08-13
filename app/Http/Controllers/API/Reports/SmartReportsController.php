@@ -135,7 +135,9 @@ class SmartReportsController extends ResponsesController
             $userId = $request->get("userId");
 
         $statuses = [];
-        $userSensors = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)->where('b.name', 'not like', '%loss sensor%')->get();
+        $userSensors = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)
+        ->where('b.name', 'not like', '%loss sensor%')
+        ->get();
         $yesterday = date('Y-m-d',strtotime("-1 days"));
         $last_week = date('Y-m-d',strtotime("-7 days"));
         $last_two_weeks = date('Y-m-d',strtotime("-14 days"));
@@ -156,6 +158,7 @@ class SmartReportsController extends ResponsesController
 
             array_push($statuses, [
                 'sensor' => $sensor,
+                'si' => 'W',
                 'statuses' => [
                     $power4,
                     $power3,
@@ -164,6 +167,21 @@ class SmartReportsController extends ResponsesController
                 ]
             ]);
         }
+
+        $lossSensor = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)
+        ->where('b.name', 'like', '%loss sensor%')
+        ->first();
+
+        array_push($statuses, [
+            'sensor' => $lossSensor,
+            'si' => 'A',
+            'statuses' => [
+                $this->getAvgPower($yesterday, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($last_week, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($last_month, $lossSensor->id, $userId)[1]->average ?? 0,
+            ]
+        ]);
 
         return $this->sendResponse($statuses, "");
     }

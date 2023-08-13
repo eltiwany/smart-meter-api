@@ -117,7 +117,7 @@ class SeedController extends ResponsesController
         DB::table('user_sensor_values')->insert($data);
     }
 
-    public function generateSensorLosses($user_board, $random_values_per_sensor = 500)
+    public function generateSensorLosses($user_board, $random_values_per_sensor = 1000)
     {
         $data = [];
 
