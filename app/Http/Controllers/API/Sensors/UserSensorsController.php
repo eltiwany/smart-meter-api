@@ -144,11 +144,11 @@ class UserSensorsController extends ResponsesController
                             ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                                 $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                                     $q = $query2->where('district', '!=', null);
-                                    if (!is_null($district))
+                                    if ($district)
                                         $q = $q->where('district', $district);
-                                    if (!is_null($region))
+                                    if ($region)
                                         $q = $q->where('region', $region);
-                                    if (!is_null($city))
+                                    if ($city)
                                         $q = $q->where('city', $city);
                                     if (!is_null($userId))
                                         $q = $q->where('id', $userId);
@@ -164,11 +164,11 @@ class UserSensorsController extends ResponsesController
                             ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                                 $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                                     $q = $query2->where('district', '!=', null);
-                                    if (!is_null($district))
+                                    if ($district)
                                         $q = $q->where('district', $district);
-                                    if (!is_null($region))
+                                    if ($region)
                                         $q = $q->where('region', $region);
-                                    if (!is_null($city))
+                                    if ($city)
                                         $q = $q->where('city', $city);
                                     if (!is_null($userId))
                                         $q = $q->where('id', $userId);
@@ -196,11 +196,11 @@ class UserSensorsController extends ResponsesController
                     ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                         $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                             $q = $query2->where('district', '!=', null);
-                            if (!is_null($district))
+                            if ($district)
                                 $q = $q->where('district', $district);
-                            if (!is_null($region))
+                            if ($region)
                                 $q = $q->where('region', $region);
-                            if (!is_null($city))
+                            if ($city)
                                 $q = $q->where('city', $city);
                             if (!is_null($userId))
                                     $q = $q->where('id', $userId);
