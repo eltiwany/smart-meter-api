@@ -225,13 +225,6 @@ class UserSensorsController extends ResponsesController
         array_push($sensorErthingLossValues, [
             "name" => $earthing_column->column,
             "data" => UserSensorValue::where(['sensor_column_id' => $earthing_column->id])
-                        ->selectRaw('
-                            (
-                                case when
-                                abs(value - lag(value) over (partition by sensor_column_id order by created_at desc)) is null then 0 else
-                                abs(value - lag(value) over (partition by sensor_column_id order by created_at desc)) end
-                            ) as diff
-                        ')
                         ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
                             $query->whereHas('user', function ($query2) use ($district, $region, $city) {
                                 $q = $query2->where('district', '!=', null);
@@ -247,7 +240,7 @@ class UserSensorsController extends ResponsesController
                         ->whereDate('created_at', '>=', $startDate)
                         ->whereDate('created_at', '<=', $endDate)
                         ->orderBy('created_at', 'desc')
-                        ->pluck('diff')
+                        ->pluck('value')
                         ->toArray(),
         ]);
 
