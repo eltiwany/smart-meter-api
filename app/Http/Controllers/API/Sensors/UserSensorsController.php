@@ -143,7 +143,7 @@ class UserSensorsController extends ResponsesController
                 "data" => UserSensorValue::where(['sensor_column_id' => $column->id])
                             ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                                 $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                                    $q = $query2->where('district', '!=', null);
+                                    $q = $query2->where(true);
                                     if ($district)
                                         $q = $q->where('district', $district);
                                     if ($region)
@@ -163,7 +163,7 @@ class UserSensorsController extends ResponsesController
                 "time" => UserSensorValue::where(['sensor_column_id' => $column->id])
                             ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                                 $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                                    $q = $query2->where('district', '!=', null);
+                                    $q = $query2->where(true);
                                     if ($district)
                                         $q = $q->where('district', $district);
                                     if ($region)
@@ -195,7 +195,7 @@ class UserSensorsController extends ResponsesController
                     ')
                     ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                         $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                            $q = $query2->where('district', '!=', null);
+                            $q = $query2->where(true);
                             if ($district)
                                 $q = $q->where('district', $district);
                             if ($region)
