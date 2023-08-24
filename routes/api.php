@@ -134,6 +134,7 @@ Route::group([
         Route::post('switch-smart-actuator', [UserSensorsController::class, 'switchSmartActuator']);
         Route::get('user-sensors-auto-added', [UserSensorsController::class, 'getAutoAddedUserSensors']);
         Route::resource('user-sensors', UserSensorsController::class);
+        Route::post('get-user-sensors', [UserSensorsController::class, 'getUserSensors']);
         Route::get('get-user-sensor-values', [UserSensorsController::class, 'getUserSensorValues']);
         Route::get('get-user-sensor-values/{id}', [UserSensorsController::class, 'getUserSensorValuesById']);
 

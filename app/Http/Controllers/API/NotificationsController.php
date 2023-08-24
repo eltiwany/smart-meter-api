@@ -21,12 +21,21 @@ class NotificationsController extends ResponsesController
     {
         $validator = Validator::make($request->all(), [
             'message' => 'required',
+            'region' => 'required',
+            'district' => 'required'
         ]);
 
         if ($validator->fails())
             return $this->sendError('Validation fails', $validator->errors(), 401);
 
-        $users = User::all();
+        $users = User::where([
+            'region' => $request->get('region'),
+            'district' => $request->get('district'),
+        ])->get();
+
+        if (sizeof($users) <= 0)
+            return $this->sendError('Users were not found on select region/district.', $validator->errors(), 404);
+
         $phone_numbers = [];
 
         $index = 1;

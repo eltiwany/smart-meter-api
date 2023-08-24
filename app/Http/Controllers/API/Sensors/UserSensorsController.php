@@ -131,14 +131,18 @@ class UserSensorsController extends ResponsesController
         ->groupBy('column')
         ->get();
 
+        $userId = null;
+        if (!$district || !$region || !$city)
+            $userId = auth()->user()->id;
+
         $sensorColumnValues = [];
         $sensorColumnLossValues = [];
         foreach($columns as $column) {
             array_push($sensorColumnValues, [
                 "name" => $column->column,
                 "data" => UserSensorValue::where(['sensor_column_id' => $column->id])
-                            ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
-                                $query->whereHas('user', function ($query2) use ($district, $region, $city) {
+                            ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                                $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                                     $q = $query2->where('district', '!=', null);
                                     if (!is_null($district))
                                         $q = $q->where('district', $district);
@@ -146,6 +150,8 @@ class UserSensorsController extends ResponsesController
                                         $q = $q->where('region', $region);
                                     if (!is_null($city))
                                         $q = $q->where('city', $city);
+                                    if (!is_null($userId))
+                                        $q = $q->where('id', $userId);
                                     $query2 = $q;
                                 });
                             })
@@ -155,8 +161,8 @@ class UserSensorsController extends ResponsesController
                             ->pluck('value')
                             ->toArray(),
                 "time" => UserSensorValue::where(['sensor_column_id' => $column->id])
-                            ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
-                                $query->whereHas('user', function ($query2) use ($district, $region, $city) {
+                            ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                                $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                                     $q = $query2->where('district', '!=', null);
                                     if (!is_null($district))
                                         $q = $q->where('district', $district);
@@ -164,6 +170,8 @@ class UserSensorsController extends ResponsesController
                                         $q = $q->where('region', $region);
                                     if (!is_null($city))
                                         $q = $q->where('city', $city);
+                                    if (!is_null($userId))
+                                        $q = $q->where('id', $userId);
                                     $query2 = $q;
                                 });
                             })
@@ -185,8 +193,8 @@ class UserSensorsController extends ResponsesController
                                 abs(value - lag(value) over (partition by sensor_column_id order by created_at desc)) end
                             ) as diff
                     ')
-                    ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
-                        $query->whereHas('user', function ($query2) use ($district, $region, $city) {
+                    ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                        $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                             $q = $query2->where('district', '!=', null);
                             if (!is_null($district))
                                 $q = $q->where('district', $district);
@@ -194,32 +202,14 @@ class UserSensorsController extends ResponsesController
                                 $q = $q->where('region', $region);
                             if (!is_null($city))
                                 $q = $q->where('city', $city);
+                            if (!is_null($userId))
+                                    $q = $q->where('id', $userId);
                             $query2 = $q;
                         });
                     })
                     ->whereDate('created_at', '>=', $startDate)
                     ->whereDate('created_at', '<=', $endDate)
                     // ->groupBy('usv.user_sensor_id')
-                    ->pluck('diff')
-                    ->toArray(),
-
-                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])
-                    ->selectRaw('created_at as diff')
-                    ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
-                        $query->whereHas('user', function ($query2) use ($district, $region, $city) {
-                            $q = $query2->where('district', '!=', null);
-                            if (!is_null($district))
-                                $q = $q->where('district', $district);
-                            if (!is_null($region))
-                                $q = $q->where('region', $region);
-                            if (!is_null($city))
-                                $q = $q->where('city', $city);
-                            $query2 = $q;
-                        });
-                    })
-                    ->whereDate('created_at', '>=', $startDate)
-                    ->whereDate('created_at', '<=', $endDate)
-                    ->orderByRaw("created_at desc")
                     ->pluck('diff')
                     ->toArray(),
             ]);
@@ -372,7 +362,7 @@ class UserSensorsController extends ResponsesController
         $totalRecords =
         count(
             $this->fetchPinNumbers(
-                $this->fetchAllUserSensors()
+                $this->fetchAllUserSensors(true)
                 ->get()
             )
         );
@@ -380,24 +370,42 @@ class UserSensorsController extends ResponsesController
         $totalRecordswithFilter =
         count(
             $this->fetchPinNumbers(
-                $this->fetchAllUserSensors()
+                $this->fetchAllUserSensors(true)
                 ->where(function ($query) use ($searchValue) {
                     $query
-                        ->where('b.name', 'like', '%' . $searchValue . '%')
-                        ->orWhere('bp.pin_number', 'like', '%' . $searchValue . '%')
-                        ->orWhere('pt.type', 'like', '%' . $searchValue . '%');
+                        ->where('ub.id', 'like', '%' . $searchValue . '%')
+                        ->orWhere('u.name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('u.email', 'like', '%' . $searchValue . '%')
+                        ->orWhere('u.city', 'like', '%' . $searchValue . '%')
+                        ->orWhere('u.region', 'like', '%' . $searchValue . '%')
+                        ->orWhere('u.district', 'like', '%' . $searchValue . '%')
+                        ->orWhere('b.id', 'like', '%' . $searchValue . '%')
+                        ->orWhere('b.name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('ub.name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('ub.threshold', 'like', '%' . $searchValue . '%')
+                        ->orWhere('ub.is_switched_on', 'like', '%' . $searchValue . '%')
+                        ->orWhere('ub.threshold_percentage', 'like', '%' . $searchValue . '%');
                 })->get()
             )
         );
 
         // Fetch records
-        $records = $this->fetchAllUserSensors()
+        $records = $this->fetchAllUserSensors(true)
             ->orderBy($dt->columnName, $dt->columnSortOrder)
             ->where(function ($query) use ($searchValue) {
                 $query
-                    ->where('b.name', 'like', '%' . $searchValue . '%')
-                    ->orWhere('bp.pin_number', 'like', '%' . $searchValue . '%')
-                    ->orWhere('pt.type', 'like', '%' . $searchValue . '%');
+                    ->where('ub.id', 'like', '%' . $searchValue . '%')
+                    ->orWhere('u.name', 'like', '%' . $searchValue . '%')
+                    ->orWhere('u.email', 'like', '%' . $searchValue . '%')
+                    ->orWhere('u.city', 'like', '%' . $searchValue . '%')
+                    ->orWhere('u.region', 'like', '%' . $searchValue . '%')
+                    ->orWhere('u.district', 'like', '%' . $searchValue . '%')
+                    ->orWhere('b.id', 'like', '%' . $searchValue . '%')
+                    ->orWhere('b.name', 'like', '%' . $searchValue . '%')
+                    ->orWhere('ub.name', 'like', '%' . $searchValue . '%')
+                    ->orWhere('ub.threshold', 'like', '%' . $searchValue . '%')
+                    ->orWhere('ub.is_switched_on', 'like', '%' . $searchValue . '%')
+                    ->orWhere('ub.threshold_percentage', 'like', '%' . $searchValue . '%');
             })
             ->skip($dt->start)
             ->take($dt->rowPerPage)
@@ -409,15 +417,21 @@ class UserSensorsController extends ResponsesController
         return $this->sendDTResponse($records, $totalRecords, $totalRecordswithFilter, $dt->draw);
     }
 
-
-    public static function fetchAllUserSensors()
+    public static function fetchAllUserSensors($allUsers = false)
     {
-        return DB::table('user_sensors as ub')
+        $records = DB::table('user_sensors as ub')
+            ->join('users as u', 'u.id', '=', 'ub.user_id')
             ->join('sensors as b', 'b.id', '=', 'ub.sensor_id')
             ->leftJoin('sensor_pins as bp', 'b.id', '=', 'bp.sensor_id')
             ->leftJoin('pin_types as pt', 'pt.id', '=', 'bp.pin_type_id')
             ->selectRaw('
                             ub.id,
+                            u.name as full_name,
+                            u.phone_number,
+                            u.email,
+                            u.city,
+                            u.region,
+                            u.district,
                             b.id as sensor_id,
                             b.name,
                             ub.name as user_defined_name,
@@ -428,9 +442,12 @@ class UserSensorsController extends ResponsesController
                             b.description,
                             b.image_url,
                             ub.interval
-            ')
-            ->whereRaw('ub.user_id = ?', [ auth()->user()->id ])
-            ->groupBy('ub.id');
+            ');
+
+            if (!$allUsers)
+                $records = $records->whereRaw('ub.user_id = ?', [ auth()->user()->id ]);
+
+            return $records->groupBy('ub.id');
     }
 
     public function fetchSensorPinTypes($sensorId = false)

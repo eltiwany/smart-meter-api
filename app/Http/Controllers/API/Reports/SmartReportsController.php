@@ -176,10 +176,10 @@ class SmartReportsController extends ResponsesController
             'sensor' => $lossSensor,
             'si' => 'A',
             'statuses' => [
-                $this->getAvgPower($yesterday, $lossSensor->id, $userId)[1]->average ?? 0,
-                $this->getAvgPower($last_week, $lossSensor->id, $userId)[1]->average ?? 0,
-                $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_month, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($last_week, $lossSensor->id, $userId)[1]->average ?? 0,
+                $this->getAvgPower($yesterday, $lossSensor->id, $userId)[1]->average ?? 0,
             ]
         ]);
 
