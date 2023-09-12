@@ -98,12 +98,13 @@ class UserBoardsController extends ResponsesController
 
     public function setBoardOMC(Request $request)
     {
-        $userActiveBoard = UserBoard::where('token', $request->get('token'))->first();
-        $userActiveBoard->is_online = $request->get('status') == 1 ?? 1;
+        $token = $request->get('token');
+        $userActiveBoard = UserBoard::where('token', $token)->first();
+        $userActiveBoard->is_online = !$userActiveBoard->is_online;
         $userActiveBoard->save();
 
-        $this->saveToLog('OMC', 'Board is ' . ($request->get('status') == 1 ? 'online' : 'offline') . '!', $request->get('token'));
-        return $this->sendResponse([], 'Board is ' . ($request->get('status') == 1 ? 'online' : 'offline') . '!');
+        $this->saveToLog('OMC', 'Board is ' . ((!$userActiveBoard->is_online) ? 'online' : 'offline') . '!', ($token));
+        return $this->sendResponse([], 'Board is ' . (!$userActiveBoard->is_online ? 'online' : 'offline') . '!');
     }
 
     public function fetchConnections($userBoardId, $filter = "all", $allData = true)

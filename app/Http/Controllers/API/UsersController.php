@@ -112,7 +112,14 @@ class UsersController extends ResponsesController
             ->join('roles as r', 'r.id', '=', 'u.role_id')
             ->leftJoin('user_boards as ub', 'ub.user_id', '=', 'u.id')
             ->leftJoin('boards as b', 'ub.board_id', '=', 'b.id')
-            ->selectRaw('u.*, ub.id as board_id, b.name as board_name, ub.token, r.name as role_name, u.name as full_name');
+            ->selectRaw('
+                u.*,
+                ub.id as board_id,
+                b.name as board_name,
+                ub.is_online,
+                ub.token,
+                r.name as role_name,
+                u.name as full_name');
     }
 
     /**

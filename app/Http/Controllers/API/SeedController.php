@@ -62,7 +62,7 @@ class SeedController extends ResponsesController
                 $user_board_id = $user_board->id;
                 $sensor_id = Sensor::where('name', 'like', '%Smart Plug%')->first()->id;
                 $interval = 15;
-                $name = "Smart Plug " . rand(1000, 9999);
+                $name = "Smart Plug " . mt_rand(1000, 9999);
                 $auto_added = true;
 
                 array_push($data, [
@@ -98,7 +98,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[0],
-                    'value' => rand($this->minVoltage, $this->maxVoltage),
+                    'value' => mt_rand($this->minVoltage, $this->maxVoltage),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -107,7 +107,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[1],
-                    'value' => rand($this->minCurrent, $this->maxCurrent),
+                    'value' => mt_rand($this->minCurrent, $this->maxCurrent),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -115,6 +115,51 @@ class SeedController extends ResponsesController
         }
 
         DB::table('user_sensor_values')->insert($data);
+    }
+
+    public function importSensorData(Request $request)
+    {
+        $this->end_date = Carbon::now('GMT+3');
+        $this->start_date = Carbon::now('GMT+3')->addDays(-30);
+
+        $data = [];
+        if (!$request->get('testData'))
+            return $this->sendError('Test data on a file could be read.');
+
+        $user_sensors = $request->get('testData');
+
+        try {
+
+            foreach ($user_sensors as $user_sensor) {
+                for ($ran=0; $ran < sizeof($user_sensors); $ran++) {
+                    $date = $this->randomDate($this->start_date, $this->end_date);
+
+                    // Voltage
+                    array_push($data, [
+                        'user_sensor_id' => $user_sensor['ID'],
+                        'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
+                        'value' => $user_sensor['VOLTAGE'],
+                        'created_at' => $date,
+                        'updated_at' => $date
+                    ]);
+
+                    // Current
+                    array_push($data, [
+                        'user_sensor_id' => $user_sensor['ID'],
+                        'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
+                        'value' => $user_sensor['CURRENT'],
+                        'created_at' => $date,
+                        'updated_at' => $date
+                    ]);
+                }
+            }
+
+            DB::table('user_sensor_values')->insert($data);
+
+            return $this->sendResponse([], 'Successfully imported test data');
+        } catch (Throwable $e) {
+            return $this->sendError($e->getMessage(), [], 500);
+        }
     }
 
     public function generateSensorLosses($user_board, $random_values_per_sensor = 1000)
@@ -126,7 +171,7 @@ class SeedController extends ResponsesController
             $user_board_id = $user_board->id;
             $sensor_id = Sensor::where('name', 'like', '%Loss Sensor%')->first()->id;
             $interval = 60;
-            $name = "Earthing Loss Sensor " . rand(1000, 9999);
+            $name = "Earthing Loss Sensor " . mt_rand(1000, 9999);
             $auto_added = true;
 
             array_push($data, [
@@ -157,7 +202,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[0],
-                    'value' => rand($this->minVoltage, $this->maxVoltage),
+                    'value' => mt_rand($this->minVoltage, $this->maxVoltage),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -166,7 +211,7 @@ class SeedController extends ResponsesController
                 array_push($data, [
                     'user_sensor_id' => $user_sensor->id,
                     'sensor_column_id' => $sensor_columns[1],
-                    'value' => rand($this->minCurrent, $this->maxCurrent),
+                    'value' => mt_rand($this->minCurrent, $this->maxCurrent),
                     'created_at' => $date,
                     'updated_at' => $date
                 ]);
@@ -184,7 +229,7 @@ class SeedController extends ResponsesController
         $max = strtotime($end_date);
 
         // Generate random number using above bounds
-        $val = rand($min, $max);
+        $val = mt_rand($min, $max);
 
         // Convert back to desired date format
         return date('Y-m-d H:i:s', $val);

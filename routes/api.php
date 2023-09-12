@@ -4,6 +4,7 @@ use App\Http\Controllers\API\Actuators\ActuatorsController;
 use App\Http\Controllers\API\Actuators\UserActuatorsController;
 use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\API\AutomationsController;
+use App\Http\Controllers\API\Billing\PaymentsController;
 use App\Http\Controllers\API\Boards\BoardsController;
 use App\Http\Controllers\API\Boards\UserBoardsController;
 use App\Http\Controllers\API\DocumentsController;
@@ -65,7 +66,7 @@ Route::group([
     Route::get('get-connections-omc', [UserBoardsController::class, 'getConnectionsOMC']);
     Route::get('get-actuators-omc', [UserBoardsController::class, 'getActuatorsOMC']);
     Route::get('get-sensors-omc', [UserBoardsController::class, 'getSensorsOMC']);
-    Route::get('set-board-omc', [UserBoardsController::class, 'setBoardOMC']);
+    Route::post('set-board-omc', [UserBoardsController::class, 'setBoardOMC']);
     Route::get('set-sensor-data-omc', [UserSensorsController::class, 'setSensorData']);
     Route::get('get-actuator-status-omc/{userActuatorId}', [UserBoardsController::class, 'getActuatorStatus']);
 });
@@ -135,6 +136,7 @@ Route::group([
         Route::get('user-sensors-auto-added', [UserSensorsController::class, 'getAutoAddedUserSensors']);
         Route::resource('user-sensors', UserSensorsController::class);
         Route::post('get-user-sensors', [UserSensorsController::class, 'getUserSensors']);
+        Route::post('get-user-sensors-by-token', [UserSensorsController::class, 'getUserSensorsByToken']);
         Route::get('get-user-sensor-values', [UserSensorsController::class, 'getUserSensorValues']);
         Route::get('get-user-sensor-values/{id}', [UserSensorsController::class, 'getUserSensorValuesById']);
 
@@ -206,10 +208,21 @@ Route::group([
 
         // Seending API's
         Route::group([
+            'prefix' => 'billing'
+        ], function () {
+            // Smart Meter
+            Route::resource('payments', PaymentsController::class);
+            Route::post('getPayments', [PaymentsController::class, 'getPayments']);
+        });
+
+
+        // Seending API's
+        Route::group([
             'prefix' => 'seed'
         ], function () {
             // Smart Meter
             Route::post('smart-meter', [SeedController::class, 'smartMeter']);
+            Route::post('smart-meter-import', [SeedController::class, 'importSensorData']);
         });
     });
 

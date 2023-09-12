@@ -7,6 +7,7 @@ use App\Http\Controllers\ResponsesController;
 use App\Models\Automation;
 use App\Models\SensorColumn;
 use App\Models\SensorPin;
+use App\Models\UserBoard;
 use App\Models\UserSensor;
 use App\Models\UserSensorConnection;
 use App\Models\UserSensorValue;
@@ -28,6 +29,34 @@ class UserSensorsController extends ResponsesController
         $userSensorsWithPins = $this->fetchPinNumbers($userSensors);
         $this->saveToLog('User Sensors', 'Getting list of user sensors');
         return $this->sendResponse($userSensorsWithPins, '');
+    }
+
+    public function getUserSensorsByToken(Request $request)
+    {
+        $token = $request->get('token');
+        $userId = UserBoard::where('token', $token);
+        if (!$userId->exists())
+            return $this->sendError('No sensors were found on this token!', []);
+
+        $userId = $userId->first()->user_id;
+
+        $records = DB::table('user_sensors as ub')
+            ->join('users as u', 'u.id', '=', 'ub.user_id')
+            ->join('sensors as b', 'b.id', '=', 'ub.sensor_id')
+            ->join('sensor_columns as sc', 'sc.sensor_id', '=', 'b.id')
+            ->selectRaw('
+                            ub.id,
+                            b.name,
+                            ub.name as user_defined_name,
+                            concat(\'[\', group_concat(concat( \'"\', sc.column, \'"\') SEPARATOR \',\'), \']\') as column_names,
+                            concat(\'[\', group_concat(sc.id SEPARATOR \',\'), \']\') as column_ids
+            ')
+            ->where(['ub.user_id' => $userId, 'auto_added' => true])
+            ->groupBy('ub.id')
+            ->get();
+
+        $this->saveToLog('User Sensors By Token', 'Getting list of user sensors');
+        return $this->sendResponse($records, '');
     }
 
     public function switchSmartActuator(Request $request)
