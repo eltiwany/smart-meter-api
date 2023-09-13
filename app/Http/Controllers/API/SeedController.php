@@ -139,8 +139,8 @@ class SeedController extends ResponsesController
                         'user_sensor_id' => $user_sensor['ID'],
                         'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
                         'value' => $user_sensor['VOLTAGE'],
-                        'created_at' => $date,
-                        'updated_at' => $date
+                        'created_at' => $user_sensor['DATE_TIME'] ?? $date,
+                        'updated_at' => $user_sensor['DATE_TIME'] ?? $date
                     ]);
 
                     // Current
@@ -148,8 +148,8 @@ class SeedController extends ResponsesController
                         'user_sensor_id' => $user_sensor['ID'],
                         'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
                         'value' => $user_sensor['CURRENT'],
-                        'created_at' => $date,
-                        'updated_at' => $date
+                        'created_at' => $user_sensor['DATE_TIME'] ?? $date,
+                        'updated_at' => $user_sensor['DATE_TIME'] ?? $date
                     ]);
                 }
             }
