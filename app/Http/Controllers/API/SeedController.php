@@ -42,7 +42,7 @@ class SeedController extends ResponsesController
             try {
                 $this->generateSensors($user_board);
                 // $this->generateSensorData($user_board);
-                // $this->generateSensorLosses($user_board);
+                $this->generateSensorLosses($user_board);
 
                 return $this->sendResponse([], 'Successfully generated test data');
             } catch (Throwable $e) {
@@ -186,39 +186,39 @@ class SeedController extends ResponsesController
             DB::table('user_sensors')->insert($data);
         }
 
-        $data = [];
-        $sensor_id = Sensor::where('name', 'like', '%Earthing Loss Sensor%')->first()->id;
+        // $data = [];
+        // $sensor_id = Sensor::where('name', 'like', '%Earthing Loss Sensor%')->first()->id;
 
-        $sensor_columns = SensorColumn::where('sensor_id', $sensor_id)->pluck('id')->toArray();
-        $user_sensors = UserSensor::whereHas('sensor', function($query) {
-            $query->where('name', 'like', '%Earthing Loss Sensor%');
-        })->where('user_board_id', $user_board->id)->get();
+        // $sensor_columns = SensorColumn::where('sensor_id', $sensor_id)->pluck('id')->toArray();
+        // $user_sensors = UserSensor::whereHas('sensor', function($query) {
+        //     $query->where('name', 'like', '%Earthing Loss Sensor%');
+        // })->where('user_board_id', $user_board->id)->get();
 
-        foreach ($user_sensors as $user_sensor) {
-            for ($ran=0; $ran < $random_values_per_sensor; $ran++) {
-                $date = $this->randomDate($this->start_date, $this->end_date);
+        // foreach ($user_sensors as $user_sensor) {
+        //     for ($ran=0; $ran < $random_values_per_sensor; $ran++) {
+        //         $date = $this->randomDate($this->start_date, $this->end_date);
 
-                // Voltage
-                array_push($data, [
-                    'user_sensor_id' => $user_sensor->id,
-                    'sensor_column_id' => $sensor_columns[0],
-                    'value' => mt_rand($this->minVoltage, $this->maxVoltage),
-                    'created_at' => $date,
-                    'updated_at' => $date
-                ]);
+        //         // Voltage
+        //         array_push($data, [
+        //             'user_sensor_id' => $user_sensor->id,
+        //             'sensor_column_id' => $sensor_columns[0],
+        //             'value' => mt_rand($this->minVoltage, $this->maxVoltage),
+        //             'created_at' => $date,
+        //             'updated_at' => $date
+        //         ]);
 
-                // Current
-                array_push($data, [
-                    'user_sensor_id' => $user_sensor->id,
-                    'sensor_column_id' => $sensor_columns[1],
-                    'value' => mt_rand($this->minCurrent, $this->maxCurrent),
-                    'created_at' => $date,
-                    'updated_at' => $date
-                ]);
-            }
-        }
+        //         // Current
+        //         array_push($data, [
+        //             'user_sensor_id' => $user_sensor->id,
+        //             'sensor_column_id' => $sensor_columns[1],
+        //             'value' => mt_rand($this->minCurrent, $this->maxCurrent),
+        //             'created_at' => $date,
+        //             'updated_at' => $date
+        //         ]);
+        //     }
+        // }
 
-        DB::table('user_sensor_values')->insert($data);
+        // DB::table('user_sensor_values')->insert($data);
     }
 
     // Find a randomDate between $start_date and $end_date
