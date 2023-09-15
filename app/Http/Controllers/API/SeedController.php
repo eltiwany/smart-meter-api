@@ -41,8 +41,8 @@ class SeedController extends ResponsesController
         if ($user_board) {
             try {
                 $this->generateSensors($user_board);
-                $this->generateSensorData($user_board);
-                $this->generateSensorLosses($user_board);
+                // $this->generateSensorData($user_board);
+                // $this->generateSensorLosses($user_board);
 
                 return $this->sendResponse([], 'Successfully generated test data');
             } catch (Throwable $e) {
