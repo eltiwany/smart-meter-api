@@ -47,12 +47,12 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
             [
-                'name' => 'Average Earthing Current',
+                'name' => 'Earthing Current',
                 'si' => 'A',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss sensor")[1]->average ?? 0
             ],
             [
-                'name' => 'Average Earthing Resistance',
+                'name' => 'Earthing Resistance',
                 'si' => 'R',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss resistance sensor")[0]?->average ?? 0
             ],
@@ -114,7 +114,7 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")))
             ],
             [
-                'name' => 'Average Earthing Current',
+                'name' => 'Earthing Current',
                 'si' => 'A',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss sensor")[1]->average ?? 0
             ],
@@ -124,7 +124,7 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)
             ],
             [
-                'name' => 'Average Earthing Resistance',
+                'name' => 'Earthing Resistance',
                 'si' => 'R',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss resistance sensor")[1]->average ?? 0
             ],
