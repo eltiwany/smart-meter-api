@@ -215,32 +215,25 @@ class UserSensorsController extends ResponsesController
             array_push($sensorColumnLossValues, [
                 "name" => $column->column,
                 "data" => UserSensorValue::where(['sensor_column_id' => $column->id])
-                    ->selectRaw('
-                            (
-                                case when
-                                abs(value - lag(value) over (partition by sensor_column_id order by created_at desc)) is null then 0 else
-                                abs(value - lag(value) over (partition by sensor_column_id order by created_at desc)) end
-                            ) as diff
-                    ')
-                    ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
-                        $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                            $q = $query2->whereRaw('1 = 1');
-                            if ($district)
-                                $q = $q->where('district', $district);
-                            if ($region)
-                                $q = $q->where('region', $region);
-                            if ($city)
-                                $q = $q->where('city', $city);
-                            if (!is_null($userId))
+                        ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                            $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
+                                $q = $query2->whereRaw('1 = 1');
+                                if ($district)
+                                    $q = $q->where('district', $district);
+                                if ($region)
+                                    $q = $q->where('region', $region);
+                                if ($city)
+                                    $q = $q->where('city', $city);
+                                if (!is_null($userId))
                                     $q = $q->where('id', $userId);
-                            $query2 = $q;
-                        });
-                    })
-                    ->whereDate('created_at', '>=', $startDate)
-                    ->whereDate('created_at', '<=', $endDate)
-                    // ->groupBy('usv.user_sensor_id')
-                    ->pluck('diff')
-                    ->toArray(),
+                                $query2 = $q;
+                            });
+                        })
+                        ->whereDate('created_at', '>=', $startDate)
+                        ->whereDate('created_at', '<=', $endDate)
+                        ->orderBy('created_at', 'desc')
+                        ->pluck('value')
+                        ->toArray(),
             ]);
         }
 
@@ -254,8 +247,8 @@ class UserSensorsController extends ResponsesController
         array_push($sensorErthingLossValues, [
             "name" => $earthing_column->column,
             "data" => UserSensorValue::where(['sensor_column_id' => $earthing_column->id])
-                        ->whereHas('user_sensor', function($query) use ($district, $region, $city) {
-                            $query->whereHas('user', function ($query2) use ($district, $region, $city) {
+                        ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                            $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
                                 $q = $query2->where('district', '!=', null);
                                 if (!is_null($district))
                                     $q = $q->where('district', $district);
@@ -263,6 +256,8 @@ class UserSensorsController extends ResponsesController
                                     $q = $q->where('region', $region);
                                 if (!is_null($city))
                                     $q = $q->where('city', $city);
+                                if (!is_null($userId))
+                                    $q = $q->where('id', $userId);
                                 $query2 = $q;
                             });
                         })
@@ -298,45 +293,25 @@ class UserSensorsController extends ResponsesController
         foreach($userSensor->sensor->columns as $column) {
             array_push($sensorColumnValues, [
                 "name" => $column->column,
-                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])
+                "data" => UserSensorValue::where([
+                                'user_sensor_id' => $id,
+                                'sensor_column_id' => $column->id
+                            ])
                             // ->whereDate('created_at', Carbon::now('GMT+3'))
                             ->orderBy('created_at', 'desc')
                             ->limit(50)
                             ->pluck('value')
                             ->toArray(),
-                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])
+                "time" => UserSensorValue::where([
+                                'user_sensor_id' => $id,
+                                'sensor_column_id' => $column->id
+                            ])
                             // ->whereDate('created_at', Carbon::now('GMT+3'))
                             ->selectRaw('created_at as diff')
                             ->orderByRaw("created_at desc")
                             ->limit(50)
                             ->pluck('diff')
                             ->toArray(),
-            ]);
-
-            array_push($sensorColumnLossValues, [
-                "name" => $column->column,
-
-                "data" => DB::table('user_sensor_values as usv')
-                    ->selectRaw('
-                            (
-                                case when
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
-                            ) as diff
-                    ')
-                    ->where(['sensor_column_id' => $column->id])
-                    ->limit(50)->pluck('diff')->toArray(),
-
-                "time" => DB::table('user_sensor_values as usv')
-                        ->selectRaw('
-                                created_at as diff
-                        ')
-                        ->where(['sensor_column_id' => $column->id])
-                        // ->groupBy('usv.user_sensor_id')
-                        ->limit(50)
-                        ->orderByRaw("created_at desc")
-                        ->pluck('diff')
-                        ->toArray(),
             ]);
         }
         array_push($data, [
@@ -347,7 +322,6 @@ class UserSensorsController extends ResponsesController
                 "name" => $userSensor->sensor->name
             ],
             'columns' => $sensorColumnValues,
-            'loss_columns' => $sensorColumnLossValues,
         ]);
         $sensorColumnValues = [];
 

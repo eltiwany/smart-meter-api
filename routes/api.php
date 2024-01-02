@@ -167,7 +167,6 @@ Route::group([
         Route::get('get-total-losses', [SmartReportsController::class, 'getUserTotalLosses']);
         Route::get('get-map-user-summary', [SmartReportsController::class, 'getMapUserSummary']);
 
-
         // Settings API's
         Route::group([
             'prefix' => 'user-boards'
@@ -214,7 +213,6 @@ Route::group([
             Route::resource('payments', PaymentsController::class);
             Route::post('getPayments', [PaymentsController::class, 'getPayments']);
         });
-
 
         // Seending API's
         Route::group([

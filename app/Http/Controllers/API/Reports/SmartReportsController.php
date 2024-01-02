@@ -12,6 +12,7 @@ use App\Models\UserSensor;
 use App\Models\UserSensorValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class SmartReportsController extends ResponsesController
 {
@@ -32,6 +33,10 @@ class SmartReportsController extends ResponsesController
                 'value' => UserSensor::where(['user_id' => $userId, 'auto_added' => true])->count()
             ],
             [
+                'name' => 'Available Units',
+                'value' => 628.5
+            ],
+            [
                 'name' => 'Average Power',
                 'si' => 'W',
                 'value' => $this->getAvgPower(date('Y-m-d',strtotime("-1 days")), null, $userId)
@@ -42,9 +47,14 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
             [
-                'name' => 'Earthing Losses',
+                'name' => 'Average Earthing Current',
                 'si' => 'A',
-                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)[1]->average ?? 0
+                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss sensor")[1]->average ?? 0
+            ],
+            [
+                'name' => 'Average Earthing Resistance',
+                'si' => 'R',
+                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss resistance sensor")[0]?->average ?? 0
             ],
         ], []);
     }
@@ -104,26 +114,26 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")))
             ],
             [
-                'name' => 'Earthing Losses',
+                'name' => 'Average Earthing Current',
                 'si' => 'A',
-                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")))[1]->average ?? 0
+                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss sensor")[1]->average ?? 0
             ],
             [
-                'name' => 'Total Power Losses (Past 24hrs)',
+                'name' => 'Average Power Losses',
                 'si' => 'W',
-                'value' => $this->getSumPowerLosses(date('Y-m-d',strtotime("-1 days")))
+                'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)
             ],
             [
-                'name' => 'Total Power Losses (Since Beginning)',
-                'si' => 'W',
-                'value' => $this->getSumPowerLosses()
+                'name' => 'Average Earthing Resistance',
+                'si' => 'R',
+                'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss resistance sensor")[1]->average ?? 0
             ],
             [
-                'name' => 'Actual Power',
+                'name' => 'Average Actual Power',
                 'si' => 'W',
                 'value' => (sizeof($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))) > 0 ? ($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[0]->average * $this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[1]->average) : 0)
-                            - $this->getSumPowerLosses(date('Y-m-d',strtotime("-1 days")))
-                            - (230 * ($this->getLosses(date('Y-m-d',strtotime("-1 days")))[1]->average ?? 0))
+                            - ($this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)[0]['average'] * $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)[1]['average'])
+                            - (230 * ($this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss sensor")[1]->average ?? 0))
             ],
         ], []);
     }
@@ -137,6 +147,7 @@ class SmartReportsController extends ResponsesController
         $statuses = [];
         $userSensors = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)
         ->where('b.name', 'not like', '%loss sensor%')
+        ->where('b.name', 'not like', '%loss resistance sensor%')
         ->get();
         $yesterday = date('Y-m-d',strtotime("-1 days"));
         $last_week = date('Y-m-d',strtotime("-7 days"));
@@ -183,6 +194,23 @@ class SmartReportsController extends ResponsesController
             ]
         ]);
 
+        $lossSensor = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)
+        ->where('b.name', 'like', '%loss resistance sensor%')
+        ->first();
+
+        // return ($this->getAvgPower($last_month, $lossSensor->id, $userId)[0]);
+
+        array_push($statuses, [
+            'sensor' => $lossSensor,
+            'si' => 'R',
+            'statuses' => [
+                $this->getAvgPower($last_month, $lossSensor->id, $userId)[0]->average ?? 0,
+                $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[0]->average ?? 0,
+                $this->getAvgPower($last_week, $lossSensor->id, $userId)[0]->average ?? 0,
+                $this->getAvgPower($yesterday, $lossSensor->id, $userId)[0]->average ?? 0,
+            ]
+        ]);
+
         return $this->sendResponse($statuses, "");
     }
 
@@ -194,11 +222,8 @@ class SmartReportsController extends ResponsesController
             ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
             ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
             ->selectRaw('
-                (
-                    case when
-                    abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
-                    abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
-                ) as average,
+                -- ABS(usv.value - LAG(usv.value) OVER (ORDER BY usv.created_at)) AS average,
+                usv.value as average,
                 sc.column as name
             ')
             ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
@@ -209,27 +234,31 @@ class SmartReportsController extends ResponsesController
             if ($userId)
                 $data = $data->where('us.user_id', $userId);
 
-            $data = $data//->groupBy('usv.sensor_column_id')
-            ->get();
+            $data = $data->groupBy('usv.sensor_column_id')
+            ->get()
+            ->toArray();
 
             $v = 0;
             $a = 0;
-            $c = 0;
-            foreach($data as $value) {
-                if ($value->name == 'V')
-                    $v += $value->average;
-                else
-                    $a += $value->average;
-                $c+=0.5;
+
+            $vArray = array_values(array_filter($data, function($datum) { return $datum->name == 'V'; }));
+            $cArray = array_values(array_filter($data, function($datum) { return $datum->name == 'A'; }));
+
+            for ($index = 0; $index < sizeof($vArray); $index++) {
+                if (sizeof($vArray) == ($index + 1))
+                    break;
+
+                $v = abs($vArray[$index]->average);
+                $a = abs($cArray[$index + 1]->average - $cArray[$index]->average);
             }
 
             $data = [
                 [
-                    'average' => $c == 0 ? 0 : $v/$c,
+                    'average' => $v,
                     'name' => 'V'
                 ],
                 [
-                    'average' => $c == 0 ? 0 : $a/$c,
+                    'average' => $a,
                     'name' => 'A'
                 ],
             ];
@@ -299,14 +328,14 @@ class SmartReportsController extends ResponsesController
         return $data;
     }
 
-    public function getLosses($date, $userSensorId = null, $userId = null)
+    public function getLosses($date, $userSensorId = null, $userId = null, $lossCol = 'Loss')
     {
         $data = DB::table('user_sensor_values as usv')
             ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
             ->leftJoin('sensors as s', 'us.sensor_id', '=', 's.id')
             ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
-            ->selectRaw('sum(value) as average, sc.column as name')
-            ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ? and s.name like ?', [true, $date, '%Loss%']);
+            ->selectRaw('avg(value) as average, sc.column as name')
+            ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ? and s.name like ?', [true, $date, "%$lossCol%"]);
 
             if ($userSensorId)
                 $data = $data->where('us.id', $userSensorId);
@@ -335,48 +364,9 @@ class SmartReportsController extends ResponsesController
         foreach($columns as $column) {
             array_push($sensorColumnValues, [
                 "name" => $column->column,
-                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->limit(50)->pluck('value')->toArray(),
-                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('hour(created_at) as diff')->orderByRaw("hour('created_at') desc")->limit(50)->pluck('diff')->toArray(),
-                "sum" => UserSensorValue::where(['sensor_column_id' => $column->id])->orderBy('created_at', 'desc')->sum('value'),
-            ]);
-
-            array_push($sensorColumnLossValues, [
-                "name" => $column->column,
-                "data" => DB::table('user_sensor_values as usv')
-                    ->selectRaw('
-                            (
-                                case when
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
-                            ) as diff
-                    ')
-                    ->where(['sensor_column_id' => $column->id])
-                    // ->groupBy('usv.user_sensor_id')
-                    ->limit(50)
-                    ->pluck('diff')
-                    ->toArray(),
-                "time" => DB::table('user_sensor_values as usv')
-                    ->selectRaw('
-                            hour(created_at) as diff
-                    ')
-                    ->where(['sensor_column_id' => $column->id])
-                    // ->groupBy('usv.user_sensor_id')
-                    ->limit(50)
-                    ->orderByRaw("hour('created_at') desc")
-                    ->pluck('diff')
-                    ->toArray(),
-                "sum" => array_sum(
-                    DB::table('user_sensor_values as usv')
-                    ->selectRaw('
-                            (
-                                case when
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
-                                abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
-                            ) as diff
-                    ')
-                    ->where(['sensor_column_id' => $column->id])
-                    ->pluck('diff')
-                    ->toArray())
+                "data" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('avg(value) as avgValue')->groupByRaw('hour(created_at)')->orderByRaw("hour('created_at') asc")->pluck('avgValue')->toArray(),
+                "time" => UserSensorValue::where(['sensor_column_id' => $column->id])->selectRaw('hour(created_at) as diff')->whereRaw('created_at = ?', [ date_format(Carbon::now('GMT+3'), 'Y-m-d H:i:s') ])->groupByRaw('hour(created_at)')->orderByRaw("hour('created_at') asc")->pluck('diff')->toArray(),
+                "sum" => UserSensorValue::where(['sensor_column_id' => $column->id])->groupByRaw('hour(created_at)')->orderByRaw("hour('created_at') asc")->sum('value'),
             ]);
         }
         array_push($data, [
@@ -384,8 +374,7 @@ class SmartReportsController extends ResponsesController
                 "sensor_id" => $column->sensor->id,
                 "name" => $column->sensor->name
             ],
-            'columns' => $sensorColumnValues,
-            'loss_columns' => $sensorColumnLossValues,
+            'columns' => $sensorColumnValues
         ]);
         $sensorColumnValues = [];
 
@@ -407,12 +396,8 @@ class SmartReportsController extends ResponsesController
 
             $data = DB::table('user_sensor_values as usv')
             ->selectRaw('
-                    (
-                        case when
-                        abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) is null then 0 else
-                        abs(usv.value - lag(usv.value) over (partition by usv.sensor_column_id order by usv.created_at desc)) end
-                    ) as diff,
-                    usv.created_at as created_at
+                usv.value as diff,
+                usv.created_at as created_at
             ')
             ->where(['sensor_column_id' => $column->id]);
 

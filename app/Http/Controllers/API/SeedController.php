@@ -44,7 +44,7 @@ class SeedController extends ResponsesController
                 // $this->generateSensorData($user_board);
                 $this->generateSensorLosses($user_board);
 
-                return $this->sendResponse([], 'Successfully generated test data');
+                return $this->sendResponse([], "Successfully generated smart appliances and loss sensors for meter token: $token");
             } catch (Throwable $e) {
                 return $this->sendError($e->getMessage(), [], 500);
             }
@@ -134,23 +134,36 @@ class SeedController extends ResponsesController
                 for ($ran=0; $ran < sizeof($user_sensors); $ran++) {
                     $date = $this->randomDate($this->start_date, $this->end_date);
 
-                    // Voltage
-                    array_push($data, [
-                        'user_sensor_id' => $user_sensor['ID'],
-                        'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
-                        'value' => $user_sensor['VOLTAGE'],
-                        'created_at' => $date,
-                        'updated_at' => $date
-                    ]);
+                    if ($user_sensor['VOLTAGE_COLUMN_ID'] != '-') {
+                        // Voltage
+                        array_push($data, [
+                            'user_sensor_id' => $user_sensor['ID'],
+                            'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
+                            'value' => $user_sensor['VOLTAGE'],
+                            'created_at' => $date,
+                            'updated_at' => $date
+                        ]);
 
-                    // Current
-                    array_push($data, [
-                        'user_sensor_id' => $user_sensor['ID'],
-                        'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
-                        'value' => $user_sensor['CURRENT'],
-                        'created_at' => $date,
-                        'updated_at' => $date
-                    ]);
+                        // Current
+                        array_push($data, [
+                            'user_sensor_id' => $user_sensor['ID'],
+                            'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
+                            'value' => $user_sensor['CURRENT'],
+                            'created_at' => $date,
+                            'updated_at' => $date
+                        ]);
+                    }
+
+                    if ($user_sensor['RESISTANCE_COLUMN_ID'] != '-') {
+                        // Resistance
+                        array_push($data, [
+                            'user_sensor_id' => $user_sensor['ID'],
+                            'sensor_column_id' => $user_sensor['RESISTANCE_COLUMN_ID'],
+                            'value' => $user_sensor['RESISTANCE'],
+                            'created_at' => $date,
+                            'updated_at' => $date
+                        ]);
+                    }
                 }
             }
 
@@ -172,6 +185,27 @@ class SeedController extends ResponsesController
             $sensor_id = Sensor::where('name', 'like', '%Loss Sensor%')->first()->id;
             $interval = 60;
             $name = "Earthing Loss Sensor " . mt_rand(1000, 9999);
+            $auto_added = true;
+
+            array_push($data, [
+                "user_id" => $user_id,
+                "sensor_id" => $sensor_id,
+                "user_board_id" => $user_board_id,
+                "interval" => $interval,
+                "name" => $name,
+                "auto_added" => $auto_added
+            ]);
+
+            DB::table('user_sensors')->insert($data);
+        }
+
+        $data = [];
+        if (!UserSensor::where('user_board_id', $user_board->id)->where('name', 'like', '%Loss Resistance Sensor%')->exists()) {
+            $user_id = $user_board->user_id;
+            $user_board_id = $user_board->id;
+            $sensor_id = Sensor::where('name', 'like', '%Loss Resistance Sensor%')->first()->id;
+            $interval = 60;
+            $name = "Earthing Loss Resistance Sensor " . mt_rand(1000, 9999);
             $auto_added = true;
 
             array_push($data, [

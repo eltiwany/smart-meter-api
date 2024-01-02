@@ -69,6 +69,7 @@ class AuthController extends ResponsesController
                 'name' => $user->name,
                 'email' => $user->email,
                 'permissions' => $permissions,
+                'board' => UserBoard::where('user_id', auth()->user()->id)->first(),
             ])->attempt($credentials);
 
             $success = [

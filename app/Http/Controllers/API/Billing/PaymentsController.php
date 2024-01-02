@@ -107,6 +107,8 @@ class PaymentsController extends ResponsesController
                         'transaction_id' => $payment['TRANSACTION_ID'],
                         'transaction_date' => $payment['TRANSACTION_DATE'],
                         'amount' => $payment['AMOUNT'],
+                        'token' => $payment['TOKEN'],
+                        'units' => $payment['UNITS'],
                         'description' => $payment['DESCRIPTION'],
                         'created_at' => Carbon::now('GMT+3'),
                         'updated_at' => Carbon::now('GMT+3')

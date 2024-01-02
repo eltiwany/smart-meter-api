@@ -48,7 +48,7 @@ class NotificationsController extends ResponsesController
         }
 
         $requestBeem = [
-            "source_addr" => 'NafuuSMS',
+            "source_addr" => 'INFO',
             "schedule_time" => '',
             "encoding" => 0,
             "message" => $request->get("message"),
