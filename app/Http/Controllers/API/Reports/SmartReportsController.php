@@ -129,7 +129,7 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, null, "loss resistance sensor")[1]->average ?? 0
             ],
             [
-                'name' => 'Average Actual Power',
+                'name' => 'Actual Power',
                 'si' => 'W',
                 'value' => (sizeof($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))) > 0 ? ($this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[0]->average * $this->getTotalPower(date('Y-m-d',strtotime("-1 days")))[1]->average) : 0)
                             - ($this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)[0]['average'] * $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, null)[1]['average'])
