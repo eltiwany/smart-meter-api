@@ -268,6 +268,37 @@ class UserSensorsController extends ResponsesController
                         ->toArray(),
         ]);
 
+        $earthing_resistance_column = SensorColumn::whereHas('sensor', function($query) {
+            $query->where('name', 'like', '%Loss Resistance Sensor%');
+        })
+        ->where('column', '=', 'R')
+        ->first();
+
+        $sensorErthingResistanceLossValues = [];
+        array_push($sensorErthingResistanceLossValues, [
+            "name" => $earthing_resistance_column->column,
+            "data" => UserSensorValue::where(['sensor_column_id' => $earthing_resistance_column->id])
+                        ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
+                            $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
+                                $q = $query2->where('district', '!=', null);
+                                if (!is_null($district))
+                                    $q = $q->where('district', $district);
+                                if (!is_null($region))
+                                    $q = $q->where('region', $region);
+                                if (!is_null($city))
+                                    $q = $q->where('city', $city);
+                                if (!is_null($userId))
+                                    $q = $q->where('id', $userId);
+                                $query2 = $q;
+                            });
+                        })
+                        ->whereDate('created_at', '>=', $startDate)
+                        ->whereDate('created_at', '<=', $endDate)
+                        ->orderBy('created_at', 'desc')
+                        ->pluck('value')
+                        ->toArray(),
+        ]);
+
         array_push($data, [
             'sensor' => [
                 "sensor_id" => $column->sensor->id,
@@ -275,7 +306,8 @@ class UserSensorsController extends ResponsesController
             ],
             'columns' => $sensorColumnValues,
             'loss_columns' => $sensorColumnLossValues,
-            'earthing_columns' => $sensorErthingLossValues
+            'earthing_columns' => $sensorErthingLossValues,
+            'earthing_resistance_columns' => $sensorErthingResistanceLossValues
         ]);
         $sensorColumnValues = [];
 

@@ -264,6 +264,7 @@ class UserBoardsController extends ResponsesController
     {
         $userBoards = DB::table('user_boards as ub')
             ->join('boards as b', 'b.id', '=', 'ub.board_id')
+            ->join('users as u', 'ub.user_id', '=', 'u.id')
             ->leftJoin('board_pins as bp', 'b.id', '=', 'bp.board_id')
             ->leftJoin('pin_types as pt', 'pt.id', '=', 'bp.pin_type_id');
 
@@ -273,7 +274,8 @@ class UserBoardsController extends ResponsesController
                                     ub.id,
                                     b.id as board_id,
                                     ub.token,
-                                    ub.is_online
+                                    ub.is_online,
+                                    u.available_units
                                 ');
 
             else
@@ -285,7 +287,8 @@ class UserBoardsController extends ResponsesController
                                     b.description,
                                     b.image_url,
                                     ub.token,
-                                    ub.is_online
+                                    ub.is_online,
+                                    u.available_units
                                 ');
 
             return $userBoards->groupBy('b.id');

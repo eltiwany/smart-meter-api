@@ -187,6 +187,7 @@ class UsersController extends ResponsesController
         $user->district = $request->get('district');
         $user->residence_id = $request->get('residence_id');
         $user->coordinates = $request->get('coordinates');
+        $user->available_units = $request->get('available_units');
         $user->role_id = $request->get('roleId');
         $user->save();
 
