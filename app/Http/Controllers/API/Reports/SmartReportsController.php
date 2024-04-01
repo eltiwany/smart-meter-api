@@ -155,6 +155,7 @@ class SmartReportsController extends ResponsesController
         $last_week = date('Y-m-d',strtotime("-7 days"));
         $last_two_weeks = date('Y-m-d',strtotime("-14 days"));
         $last_month = date('Y-m-d',strtotime("-30 days"));
+        $last_year = date('Y-m-d',strtotime("-260 days"));
 
         foreach ($userSensors as $sensor) {
             $av = $this->getAvgPower($yesterday, $sensor->id, $userId);
@@ -169,10 +170,14 @@ class SmartReportsController extends ResponsesController
             $av = $this->getAvgPower($last_month, $sensor->id, $userId);
             $power4 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
 
+            $av = $this->getAvgPower($last_year, $sensor->id, $userId);
+            $power5 = sizeof($av) > 0 ? $av[0]->average * $av[1]->average : 0;
+
             array_push($statuses, [
                 'sensor' => $sensor,
                 'si' => 'W',
                 'statuses' => [
+                    $power5,
                     $power4,
                     $power3,
                     $power2,
@@ -189,6 +194,7 @@ class SmartReportsController extends ResponsesController
             'sensor' => $lossSensor,
             'si' => 'A',
             'statuses' => [
+                $this->getAvgPower($last_year, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_month, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_week, $lossSensor->id, $userId)[1]->average ?? 0,
@@ -206,6 +212,7 @@ class SmartReportsController extends ResponsesController
             'sensor' => $lossSensor,
             'si' => 'Ω',
             'statuses' => [
+                $this->getAvgPower($last_year, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_month, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_week, $lossSensor->id, $userId)[0]->average ?? 0,
