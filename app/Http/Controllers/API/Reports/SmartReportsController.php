@@ -47,12 +47,12 @@ class SmartReportsController extends ResponsesController
                 'value' => $this->getAvgPowerLosses(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
             [
-                'name' => 'Ground Current',
+                'name' => 'Earthing Fault Current',
                 'si' => 'A',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss sensor")[1]->average ?? 0
             ],
             [
-                'name' => 'Ground Resistance',
+                'name' => 'Earthing Resistance',
                 'si' => 'Ω',
                 'value' => $this->getLosses(date('Y-m-d',strtotime("-1 days")), null, $userId, "loss resistance sensor")[0]?->average ?? 0
             ],
