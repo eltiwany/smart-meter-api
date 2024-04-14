@@ -6,6 +6,7 @@ use App\Http\Controllers\API\Auth\AuthController;
 use App\Http\Controllers\API\AutomationsController;
 use App\Http\Controllers\API\Billing\PaymentsController;
 use App\Http\Controllers\API\Boards\BoardsController;
+use App\Http\Controllers\API\Boards\SmartMeterController;
 use App\Http\Controllers\API\Boards\UserBoardsController;
 use App\Http\Controllers\API\DocumentsController;
 use App\Http\Controllers\API\MessagesController;
@@ -69,6 +70,11 @@ Route::group([
     Route::post('set-board-omc', [UserBoardsController::class, 'setBoardOMC']);
     Route::get('set-sensor-data-omc', [UserSensorsController::class, 'setSensorData']);
     Route::get('get-actuator-status-omc/{userActuatorId}', [UserBoardsController::class, 'getActuatorStatus']);
+
+    Route::post('store-power-data', [SmartMeterController::class, 'storePowerData']);
+    Route::post('store-plug-data', [SmartMeterController::class, 'storePlugData']);
+    Route::post('store-current-loss-data', [SmartMeterController::class, 'storeCurrentLossData']);
+    Route::post('store-resistance-loss-data', [SmartMeterController::class, 'storeResistanceLossData']);
 });
 
 
