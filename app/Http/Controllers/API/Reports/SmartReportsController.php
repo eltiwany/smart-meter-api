@@ -190,34 +190,44 @@ class SmartReportsController extends ResponsesController
         ->where('b.name', 'like', '%loss sensor%')
         ->first();
 
-        array_push($statuses, [
-            'sensor' => $lossSensor,
-            'si' => 'A',
-            'statuses' => [
+        if ($lossSensor)
+            $lossArr = [
                 $this->getAvgPower($last_year, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_month, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($last_week, $lossSensor->id, $userId)[1]->average ?? 0,
                 $this->getAvgPower($yesterday, $lossSensor->id, $userId)[1]->average ?? 0,
-            ]
+            ];
+        else
+            $lossArr = [0,0,0,0,0];
+
+        array_push($statuses, [
+            'sensor' => $lossSensor,
+            'si' => 'A',
+            'statuses' => $lossArr
         ]);
 
         $lossSensor = UserSensorsController::fetchAllUserSensors()->where('auto_added', true)
         ->where('b.name', 'like', '%loss resistance sensor%')
         ->first();
 
-        // return ($this->getAvgPower($last_month, $lossSensor->id, $userId)[0]);
-
-        array_push($statuses, [
-            'sensor' => $lossSensor,
-            'si' => 'Ω',
-            'statuses' => [
+        if ($lossSensor)
+            $lossArr = [
                 $this->getAvgPower($last_year, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_month, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_two_weeks, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($last_week, $lossSensor->id, $userId)[0]->average ?? 0,
                 $this->getAvgPower($yesterday, $lossSensor->id, $userId)[0]->average ?? 0,
-            ]
+            ];
+        else
+            $lossArr = [0,0,0,0,0];
+
+        // return ($this->getAvgPower($last_month, $lossSensor->id, $userId)[0]);
+
+        array_push($statuses, [
+            'sensor' => $lossSensor,
+            'si' => 'Ω',
+            'statuses' => $lossArr
         ]);
 
         return $this->sendResponse($statuses, "");
