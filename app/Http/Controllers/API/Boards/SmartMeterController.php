@@ -17,6 +17,32 @@ class SmartMeterController extends ResponsesController
     /**
      *
      */
+    function getPlugPowerStatus(Request $request) {
+        $token = $request->get('token');
+        $user_board = UserBoard::where('token', $token)->first();
+        $user_powered_sensors =
+            DB::table('user_sensors')
+            ->selectRaw('
+                identification_number as plug_id,
+                name,
+                is_switched_on as power_status,
+                is_active_low as active_low
+            ')
+            ->whereRaw(
+                'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true',
+                [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '']
+            )
+            ->get();
+
+        if (sizeof($user_powered_sensors) == 0)
+            return $this->sendError('No smart plug found', []);
+
+        return $this->sendResponse($user_powered_sensors, '');
+    }
+
+    /**
+     *
+     */
     function storePowerData(Request $request) {
         $validator = Validator::make($request->all(), [
             'voltage' => 'required',

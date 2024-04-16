@@ -75,6 +75,7 @@ Route::group([
     Route::post('store-plug-data', [SmartMeterController::class, 'storePlugData']);
     Route::post('store-current-loss-data', [SmartMeterController::class, 'storeCurrentLossData']);
     Route::post('store-resistance-loss-data', [SmartMeterController::class, 'storeResistanceLossData']);
+    Route::get('get-plug-power-status', [SmartMeterController::class, 'getPlugPowerStatus']);
 });
 
 
