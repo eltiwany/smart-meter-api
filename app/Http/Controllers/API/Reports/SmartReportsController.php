@@ -245,7 +245,9 @@ class SmartReportsController extends ResponsesController
                 usv.value as average,
                 sc.column as name
             ')
-            ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
+            ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date])
+            ->orderByDesc('usv.id')
+            ->limit(20000);
 
             if ($userSensorId)
                 $data = $data->where('us.id', $userSensorId);
