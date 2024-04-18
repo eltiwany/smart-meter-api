@@ -68,6 +68,7 @@ Route::group([
     Route::get('get-actuators-omc', [UserBoardsController::class, 'getActuatorsOMC']);
     Route::get('get-sensors-omc', [UserBoardsController::class, 'getSensorsOMC']);
     Route::post('set-board-omc', [UserBoardsController::class, 'setBoardOMC']);
+    Route::post('set-meter-status', [UserBoardsController::class, 'setMeterStatus']);
     Route::get('set-sensor-data-omc', [UserSensorsController::class, 'setSensorData']);
     Route::get('get-actuator-status-omc/{userActuatorId}', [UserBoardsController::class, 'getActuatorStatus']);
 

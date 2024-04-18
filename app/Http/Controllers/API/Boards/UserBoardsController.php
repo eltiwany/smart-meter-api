@@ -99,6 +99,17 @@ class UserBoardsController extends ResponsesController
     public function setBoardOMC(Request $request)
     {
         $token = $request->get('token');
+        $userActiveBoard = UserBoard::where('token', $token)->first();
+        $userActiveBoard->is_online = !$userActiveBoard->is_online;
+        $userActiveBoard->save();
+
+        $this->saveToLog('OMC', 'Board is ' . ((!$userActiveBoard->is_online) ? 'online' : 'offline') . '!', ($token));
+        return $this->sendResponse([], 'Board is ' . (!$userActiveBoard->is_online ? 'online' : 'offline') . '!');
+    }
+
+    public function setMeterStatus(Request $request)
+    {
+        $token = $request->get('token');
 
         $validator = Validator::make($request->all(), [
             'online' => 'boolean|required',
