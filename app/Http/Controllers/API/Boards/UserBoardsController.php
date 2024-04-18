@@ -99,12 +99,22 @@ class UserBoardsController extends ResponsesController
     public function setBoardOMC(Request $request)
     {
         $token = $request->get('token');
+
+        $validator = Validator::make($request->all(), [
+            'online' => 'boolean|required',
+        ]);
+
+        if ($validator->fails())
+            return $this->sendError('Validation fails', $validator->errors(), 401);
+
+        $online = $request->get('online');
+
         $userActiveBoard = UserBoard::where('token', $token)->first();
-        $userActiveBoard->is_online = !$userActiveBoard->is_online;
+        $userActiveBoard->is_online = $online;
         $userActiveBoard->save();
 
-        $this->saveToLog('OMC', 'Board is ' . ((!$userActiveBoard->is_online) ? 'online' : 'offline') . '!', ($token));
-        return $this->sendResponse([], 'Board is ' . (!$userActiveBoard->is_online ? 'online' : 'offline') . '!');
+        $this->saveToLog('OMC', 'Smart meter is ' . ($online ? 'online' : 'offline') . '.', ($token));
+        return $this->sendResponse([], 'Smart meter is ' . ($online ? 'online' : 'offline') . '.');
     }
 
     public function fetchConnections($userBoardId, $filter = "all", $allData = true)

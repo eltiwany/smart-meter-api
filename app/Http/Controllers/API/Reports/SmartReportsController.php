@@ -18,9 +18,15 @@ class SmartReportsController extends ResponsesController
 {
     public function getUserBriefStats(Request $request)
     {
-        $userId = auth()->user()->id;
+        $userId = auth()->user()?->id;
+
         if ($request->has("userId"))
             $userId = $request->get("userId");
+
+        if ($request->has("token")) {
+            $token = $request->get("token");
+            $userId = UserBoard::where('token', $token)->first()->user_id;
+        }
 
         return $this->sendResponse([
             [
@@ -34,7 +40,7 @@ class SmartReportsController extends ResponsesController
             ],
             [
                 'name' => 'Available Units',
-                'value' => auth()->user()->available_units
+                'value' => User::find($userId)->available_units
             ],
             [
                 'name' => 'Average Power',
