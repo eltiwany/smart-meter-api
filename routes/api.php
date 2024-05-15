@@ -24,6 +24,7 @@ use App\Http\Controllers\API\Settings\PagesController;
 use App\Http\Controllers\API\Settings\PermissionsController;
 use App\Http\Controllers\API\Settings\RolesController;
 use App\Http\Controllers\API\SmartSchedulerController;
+use App\Http\Controllers\API\TicketsController;
 use App\Http\Controllers\API\UsersController;
 use App\Http\Middleware\API\JWTAuth;
 use App\Http\Middleware\API\PagesPermissions;
@@ -63,11 +64,13 @@ Route::get('link', function() {
 Route::group([
     'middleware' => [ Token::class ]
 ], function () {
+    Route::get('get-schedulers', [SmartSchedulerController::class, 'index']);
     Route::get('get-board-omc', [UserBoardsController::class, 'getBoardOMC']);
     Route::get('get-connections-omc', [UserBoardsController::class, 'getConnectionsOMC']);
     Route::get('get-actuators-omc', [UserBoardsController::class, 'getActuatorsOMC']);
     Route::get('get-sensors-omc', [UserBoardsController::class, 'getSensorsOMC']);
     Route::post('set-board-omc', [UserBoardsController::class, 'setBoardOMC']);
+    Route::post('set-temper', [UserBoardsController::class, 'setTemper']);
     Route::post('set-meter-status', [UserBoardsController::class, 'setMeterStatus']);
     Route::get('set-sensor-data-omc', [UserSensorsController::class, 'setSensorData']);
     Route::get('get-actuator-status-omc/{userActuatorId}', [UserBoardsController::class, 'getActuatorStatus']);
@@ -135,6 +138,11 @@ Route::group([
         Route::resource('boards', BoardsController::class);
         // -------------------------- - - - - - ----------------------------- //
         Route::resource('user-boards', UserBoardsController::class);
+
+        // Tickets
+        Route::post('get-tickets', [TicketsController::class, 'getTickets']);
+        Route::get('get-ticket-thread/{ticketId}', [TicketsController::class, 'getTicketThread']);
+        Route::resource('tickets', TicketsController::class);
 
         // Sensors
         Route::post('get-sensors', [SensorsController::class, 'getSensors']);

@@ -103,6 +103,11 @@ class SmartMeterController extends ResponsesController
 
         DB::table('user_sensor_values')->insert($data);
 
+        DB::table('user_boards')
+            ->where('token', $token)
+            ->update([
+                'is_online' => 1
+            ]);
 
         return $this->sendResponse($request->all(), "Data has been recorded.");
 

@@ -249,7 +249,7 @@ class UserSensorsController extends ResponsesController
             "data" => UserSensorValue::where(['sensor_column_id' => $earthing_column->id])
                         ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                             $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                                $q = $query2->where('district', '!=', null);
+                                $q = $query2->whereRaw('1 = 1');
                                 if (!is_null($district))
                                     $q = $q->where('district', $district);
                                 if (!is_null($region))
@@ -280,7 +280,7 @@ class UserSensorsController extends ResponsesController
             "data" => UserSensorValue::where(['sensor_column_id' => $earthing_resistance_column->id])
                         ->whereHas('user_sensor', function($query) use ($district, $region, $city, $userId) {
                             $query->whereHas('user', function ($query2) use ($district, $region, $city, $userId) {
-                                $q = $query2->where('district', '!=', null);
+                                $q = $query2->whereRaw('1 = 1');
                                 if (!is_null($district))
                                     $q = $q->where('district', $district);
                                 if (!is_null($region))
@@ -292,6 +292,7 @@ class UserSensorsController extends ResponsesController
                                 $query2 = $q;
                             });
                         })
+                        ->selectRaw('case when value = \'Inf\' then 1001 else value end as value')
                         ->whereDate('created_at', '>=', $startDate)
                         ->whereDate('created_at', '<=', $endDate)
                         ->orderBy('created_at', 'desc')

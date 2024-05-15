@@ -15,10 +15,15 @@ class SmartSchedulerController extends ResponsesController
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $scheduler = $this->fetchSchedulers()->get();
-        $this->saveToLog('Smart Schedulers', 'Getting list of Schedulers');
+        // return $request->get('token');
+        if ($request->has('token'))
+            $scheduler = $this->fetchSchedulers($request->get('token'))->get();
+        else
+            $scheduler = $this->fetchSchedulers()->get();
+
+        // $this->saveToLog('Smart Schedulers', 'Getting list of Schedulers');
         return $this->sendResponse($scheduler, '');
     }
 
@@ -65,19 +70,25 @@ class SmartSchedulerController extends ResponsesController
     }
 
 
-    public function fetchSchedulers()
+    public function fetchSchedulers($token = null)
     {
-        return DB::table('smart_schedulers as sd')
+        $result = DB::table('smart_schedulers as sd')
             ->join('user_sensors as us', 'us.id', '=', 'sd.user_sensor_id')
+            ->join('user_boards as ub', 'ub.user_id', '=', 'us.user_id')
             ->selectRaw('
                             sd.id,
                             us.id as sensor_id,
                             us.name as sensor_name,
                             sd.from_time,
                             sd.to_time,
+                            us.identification_number as plug_id,
                             sd.is_switched_on
-                        ')
-            ->where('us.user_id', auth()->user()->id);
+                        ');
+
+        if ($token)
+            return $result->where('ub.token', $token);
+
+        return $result->where('us.user_id', auth()->user()->id);
     }
 
     /**

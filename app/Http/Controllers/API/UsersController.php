@@ -117,6 +117,7 @@ class UsersController extends ResponsesController
                 ub.id as board_id,
                 b.name as board_name,
                 ub.is_online,
+                ub.temper,
                 ub.token,
                 r.name as role_name,
                 u.name as full_name');

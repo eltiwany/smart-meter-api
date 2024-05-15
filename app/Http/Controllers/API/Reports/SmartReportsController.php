@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API\Reports;
 use App\Http\Controllers\API\Sensors\UserSensorsController;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ResponsesController;
+use App\Models\Preference;
 use App\Models\SensorColumn;
 use App\Models\User;
 use App\Models\UserBoard;
@@ -28,9 +29,27 @@ class SmartReportsController extends ResponsesController
             $userId = UserBoard::where('token', $token)->first()->user_id;
         }
 
+        $tariff = Preference::where('key', 'tariff')->first();
+        if ($tariff)
+            $tariff = $tariff->value;
+        else
+            $tariff = 0;
+
+        $energy = $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $userId);
+        foreach ($energy as $si) {
+            $si->average = $si->average * $tariff;
+            break;
+        }
+
+
         return $this->sendResponse([
             [
-                'name' => 'Energy Used',
+                'name' => 'Average Cost',
+                'si' => 'Tsh',
+                'value' => $energy
+            ],
+            [
+                'name' => 'Average Energy Used',
                 'si' => 'Wh',
                 'value' => $this->getAvgEnergy(date('Y-m-d',strtotime("-1 days")), null, $userId)
             ],
@@ -299,7 +318,7 @@ class SmartReportsController extends ResponsesController
         $data = DB::table('user_sensor_values as usv')
             ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
             ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
-            ->selectRaw('avg(value) as average, sc.column as name')
+            ->selectRaw('avg(case when value = \'Inf\' then 1001 else value end) as average, sc.column as name')
             ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ?', [true, $date]);
 
             if ($userSensorId)
@@ -361,7 +380,7 @@ class SmartReportsController extends ResponsesController
             ->leftJoin('user_sensors as us', 'usv.user_sensor_id', '=', 'us.id')
             ->leftJoin('sensors as s', 'us.sensor_id', '=', 's.id')
             ->leftJoin('sensor_columns as sc', 'usv.sensor_column_id', '=', 'sc.id')
-            ->selectRaw('avg(value) as average, sc.column as name')
+            ->selectRaw('avg(case when value = \'Inf\' then 1001 else value end) as average, sc.column as name')
             ->whereRaw('us.auto_added = ? and date(usv.created_at) >= ? and s.name like ?', [true, $date, "%$lossCol%"]);
 
             if ($userSensorId)

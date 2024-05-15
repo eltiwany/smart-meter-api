@@ -103,8 +103,19 @@ class UserBoardsController extends ResponsesController
         $userActiveBoard->is_online = !$userActiveBoard->is_online;
         $userActiveBoard->save();
 
-        $this->saveToLog('OMC', 'Board is ' . ((!$userActiveBoard->is_online) ? 'online' : 'offline') . '!', ($token));
-        return $this->sendResponse([], 'Board is ' . (!$userActiveBoard->is_online ? 'online' : 'offline') . '!');
+        $this->saveToLog('OMC', 'Board is ' . (($userActiveBoard->is_online) ? 'online' : 'offline') . '!', ($token));
+        return $this->sendResponse([], 'Board is ' . ($userActiveBoard->is_online ? 'online' : 'offline') . '!');
+    }
+
+    public function setTemper(Request $request)
+    {
+        $token = $request->get('token');
+        $userActiveBoard = UserBoard::where('token', $token)->first();
+        $userActiveBoard->temper = !$userActiveBoard->temper;
+        $userActiveBoard->save();
+
+        $this->saveToLog('OMC', 'Temper has been ' . (($userActiveBoard->temper) ? 'enabled' : 'disabled') . '!', ($token));
+        return $this->sendResponse([], 'Temper has been ' . ($userActiveBoard->temper ? 'enabled' : 'disabled') . '!');
     }
 
     public function setMeterStatus(Request $request)
@@ -296,10 +307,11 @@ class UserBoardsController extends ResponsesController
                                     b.id as board_id,
                                     ub.token,
                                     ub.is_online,
+                                    ub.temper,
                                     u.available_units
                                 ');
 
-            else
+            else {
                 $userBoards = $userBoards->whereRaw('ub.user_id = ?', [ auth()->user()->id ])
                                 ->selectRaw('
                                     ub.id,
@@ -309,8 +321,16 @@ class UserBoardsController extends ResponsesController
                                     b.image_url,
                                     ub.token,
                                     ub.is_online,
+                                    ub.temper,
                                     u.available_units
                                 ');
+
+                DB::table('user_boards')
+                    ->where('user_id', auth()->user()->id)
+                    ->update([
+                        'is_online' => 0
+                    ]);
+            }
 
             return $userBoards->groupBy('b.id');
     }
