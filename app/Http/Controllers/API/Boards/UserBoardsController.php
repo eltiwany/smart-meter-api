@@ -325,11 +325,11 @@ class UserBoardsController extends ResponsesController
                                     u.available_units
                                 ');
 
-                DB::table('user_boards')
-                    ->where('user_id', auth()->user()->id)
-                    ->update([
-                        'is_online' => 0
-                    ]);
+                // DB::table('user_boards')
+                //     ->where('user_id', auth()->user()->id)
+                //     ->update([
+                //         'is_online' => 0
+                //     ]);
             }
 
             return $userBoards->groupBy('b.id');
