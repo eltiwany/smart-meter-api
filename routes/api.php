@@ -244,4 +244,7 @@ Route::group([
     // Preferences can be accessable without authentication
     Route::post('preference-files', [PreferencesController::class, 'updatePreferenceFiles']);
     Route::resource('preferences', PreferencesController::class);
+
+    Route::get('testSeq', [SeedController::class, 'generateDateSequence']);
+
 });

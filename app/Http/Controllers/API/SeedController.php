@@ -120,7 +120,7 @@ class SeedController extends ResponsesController
     public function importSensorData(Request $request)
     {
         $this->end_date = Carbon::now('GMT+3');
-        $this->start_date = Carbon::now('GMT+3')->addDays(-30);
+        $this->start_date = Carbon::now('GMT+3')->addDays(-7);
 
         $data = [];
         if (!$request->get('testData'))
@@ -130,9 +130,12 @@ class SeedController extends ResponsesController
 
         try {
 
+            $sequencedDates = $this->generateDateSequence($this->start_date, $this->end_date, sizeof($user_sensors));
+            // return $this->sendError($sequencedDates);
+
             foreach ($user_sensors as $user_sensor) {
                 for ($ran=0; $ran < sizeof($user_sensors); $ran++) {
-                    $date = $this->randomDate($this->start_date, $this->end_date);
+                    // $date = $this->randomDate($this->start_date, $this->end_date);
 
                     if ($user_sensor['VOLTAGE_COLUMN_ID'] != '-') {
                         // Voltage
@@ -140,8 +143,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
                             'value' => $user_sensor['VOLTAGE'],
-                            'created_at' => $date,
-                            'updated_at' => $date
+                            'created_at' => $sequencedDates[$ran],
+                            'updated_at' => $sequencedDates[$ran]
                         ]);
 
                         // Current
@@ -149,8 +152,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
                             'value' => $user_sensor['CURRENT'],
-                            'created_at' => $date,
-                            'updated_at' => $date
+                            'created_at' => $sequencedDates[$ran],
+                            'updated_at' => $sequencedDates[$ran]
                         ]);
                     }
 
@@ -160,8 +163,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['RESISTANCE_COLUMN_ID'],
                             'value' => $user_sensor['RESISTANCE'],
-                            'created_at' => $date,
-                            'updated_at' => $date
+                            'created_at' => $sequencedDates[$ran],
+                            'updated_at' => $sequencedDates[$ran]
                         ]);
                     }
                 }
@@ -267,5 +270,34 @@ class SeedController extends ResponsesController
 
         // Convert back to desired date format
         return date('Y-m-d H:i:s', $val);
+    }
+
+    function generateDateSequence(
+        $startDate, $endDate, $numberOfDates
+        ) {
+
+        $dates = [];
+
+        // Convert start and end dates to Carbon instances
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        // Calculate the total seconds between start and end dates
+        $totalSeconds = max(1, $start->diffInSeconds($end));
+
+        // Ensure we have at least $numberOfDates dates or the maximum possible dates within the range
+        $secondsPerInterval = max(1, floor($totalSeconds / max(1, $numberOfDates - 1)));
+
+        // Generate the sequence of datetime values
+        $current = $start->copy();
+        while ($current->lte($end) && count($dates) < $numberOfDates) {
+            $dates[] = $current->toDateTimeString();
+            $current->addSeconds($secondsPerInterval); // Increment by calculated seconds per interval
+        }
+
+        // Trim the dates array to exactly $numberOfDates
+        $dates = array_slice($dates, 0, $numberOfDates);
+
+        return $dates;
     }
 }
