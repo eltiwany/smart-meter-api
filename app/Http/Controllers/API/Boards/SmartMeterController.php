@@ -32,7 +32,9 @@ class SmartMeterController extends ResponsesController
                     ss.is_switched_on is not null and
                     ss.from_time >= ? and ss.to_time <= ?
                 then ss.is_switched_on else us.is_switched_on end as power_status,
-                us.is_active_low as active_low
+                us.is_active_low as active_low,
+                ss.from_time,
+                ss.to_time
             ', [$currentTime, $currentTime])
             ->whereRaw(
                 'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true',
@@ -43,7 +45,7 @@ class SmartMeterController extends ResponsesController
         if (sizeof($user_powered_sensors) == 0)
             return $this->sendError('No smart plug found', []);
 
-        return $this->sendResponse($user_powered_sensors, $currentTime);
+        return $this->sendResponse($user_powered_sensors, "Current time: " . $currentTime);
     }
 
     /**
