@@ -30,7 +30,7 @@ class SmartMeterController extends ResponsesController
                 us.name,
                 case when
                     ss.is_switched_on is not null and
-                    (ss.from_time <= ? and ss.to_time >= ?)
+                    ss.from_time <= ? and ss.to_time >= ?
                 then ss.is_switched_on else us.is_switched_on end as power_status,
                 us.is_active_low as active_low,
                 ss.from_time,
