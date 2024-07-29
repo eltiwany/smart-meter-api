@@ -11,6 +11,7 @@ use App\Models\UserSensor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class SmartMeterController extends ResponsesController
 {
@@ -20,17 +21,19 @@ class SmartMeterController extends ResponsesController
     function getPlugPowerStatus(Request $request) {
         $token = $request->get('token');
         $user_board = UserBoard::where('token', $token)->first();
+        $currentTime = Carbon::now()->toTimeString();
         $user_powered_sensors =
-            DB::table('user_sensors')
+            DB::table('user_sensors us')
+            ->leftJoin('smart_schedulers as ss', 'ss.user_sensor_id', '=', 'us.id')
             ->selectRaw('
-                identification_number as plug_id,
-                name,
-                is_switched_on as power_status,
-                is_active_low as active_low
+                us.identification_number as plug_id,
+                us.name,
+                case when ss.is_switched_on is not null then ss.is_switched_on else us.is_switched_on end as power_status,
+                us.is_active_low as active_low
             ')
             ->whereRaw(
-                'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true',
-                [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '']
+                'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true and ss.from_time >= ? and ss.to_time <= ?',
+                [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '', $currentTime, $currentTime]
             )
             ->get();
 
