@@ -21,7 +21,7 @@ class SmartMeterController extends ResponsesController
     function getPlugPowerStatus(Request $request) {
         $token = $request->get('token');
         $user_board = UserBoard::where('token', $token)->first();
-        $currentTime = Carbon::now()->toTimeString();
+        $currentTime = Carbon::now("GMT+3")->toTimeString();
         $user_powered_sensors =
             DB::table('user_sensors as us')
             ->leftJoin('smart_schedulers as ss', 'ss.user_sensor_id', '=', 'us.id')
