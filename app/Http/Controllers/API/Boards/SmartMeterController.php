@@ -25,17 +25,17 @@ class SmartMeterController extends ResponsesController
         $user_powered_sensors =
             DB::table('user_sensors as us')
             ->leftJoin('smart_schedulers as ss', 'ss.user_sensor_id', '=', 'us.id')
-            ->selectRaw('
+            ->selectRaw("
                 us.identification_number as plug_id,
                 us.name,
                 case when
                     ss.is_switched_on is not null and
-                    ss.from_time <= ? and ss.to_time >= ?
+                    $currentTime > ss.from_time and $currentTime < ss.to_time
                 then ss.is_switched_on else us.is_switched_on end as power_status,
                 us.is_active_low as active_low,
                 ss.from_time,
                 ss.to_time
-            ', [$currentTime, $currentTime])
+            ")
             ->whereRaw(
                 'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true',
                 [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '']
