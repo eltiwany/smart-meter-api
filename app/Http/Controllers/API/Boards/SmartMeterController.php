@@ -23,24 +23,27 @@ class SmartMeterController extends ResponsesController
         $user_board = UserBoard::where('token', $token)->first();
         $currentTime = Carbon::now()->toTimeString();
         $user_powered_sensors =
-            DB::table('user_sensors us')
+            DB::table('user_sensors as us')
             ->leftJoin('smart_schedulers as ss', 'ss.user_sensor_id', '=', 'us.id')
             ->selectRaw('
                 us.identification_number as plug_id,
                 us.name,
-                case when ss.is_switched_on is not null then ss.is_switched_on else us.is_switched_on end as power_status,
+                case when
+                    ss.is_switched_on is not null and
+                    ss.from_time >= ? and ss.to_time <= ?
+                then ss.is_switched_on else us.is_switched_on end as power_status,
                 us.is_active_low as active_low
-            ')
+            ', [$currentTime, $currentTime])
             ->whereRaw(
-                'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true and ss.from_time >= ? and ss.to_time <= ?',
-                [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '', $currentTime, $currentTime]
+                'user_board_id = ? AND identification_number NOT IN (?, ?, ?, ?) AND auto_added = true',
+                [$user_board->id, 'smart_meter', 'earthing_current', 'earthing_resistance', '']
             )
             ->get();
 
         if (sizeof($user_powered_sensors) == 0)
             return $this->sendError('No smart plug found', []);
 
-        return $this->sendResponse($user_powered_sensors, '');
+        return $this->sendResponse($user_powered_sensors, $currentTime);
     }
 
     /**
