@@ -135,7 +135,7 @@ class SeedController extends ResponsesController
 
             foreach ($user_sensors as $user_sensor) {
                 for ($ran=0; $ran < sizeof($user_sensors); $ran++) {
-                    // $date = $this->randomDate($this->start_date, $this->end_date);
+                    $date = $this->randomDate($this->start_date, $this->end_date);
 
                     if ($user_sensor['VOLTAGE_COLUMN_ID'] != '-') {
                         // Voltage
@@ -143,8 +143,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['VOLTAGE_COLUMN_ID'],
                             'value' => $user_sensor['VOLTAGE'],
-                            'created_at' => $sequencedDates[$ran],
-                            'updated_at' => $sequencedDates[$ran]
+                            'created_at' => $date,
+                            'updated_at' => $date
                         ]);
 
                         // Current
@@ -152,8 +152,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['CURRENT_COLUMN_ID'],
                             'value' => $user_sensor['CURRENT'],
-                            'created_at' => $sequencedDates[$ran],
-                            'updated_at' => $sequencedDates[$ran]
+                            'created_at' => $date,
+                            'updated_at' => $date
                         ]);
                     }
 
@@ -163,8 +163,8 @@ class SeedController extends ResponsesController
                             'user_sensor_id' => $user_sensor['ID'],
                             'sensor_column_id' => $user_sensor['RESISTANCE_COLUMN_ID'],
                             'value' => $user_sensor['RESISTANCE'],
-                            'created_at' => $sequencedDates[$ran],
-                            'updated_at' => $sequencedDates[$ran]
+                            'created_at' => $date,
+                            'updated_at' => $date
                         ]);
                     }
                 }
