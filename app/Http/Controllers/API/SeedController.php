@@ -300,4 +300,20 @@ class SeedController extends ResponsesController
 
         return $dates;
     }
+
+    public function generateDateSequenceTest() {
+        $startDate = '2024-08-01'; $endDate = '2024-08-11'; $numberOfDates = 400;
+
+        // Convert start and end dates to Carbon instances
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        $dates = $this->generateDateSequence($startDate, $endDate, $numberOfDates);
+
+        return [
+                "Number of Days (N) between $startDate and $endDate" => date_diff($start, $end)->days,
+                "Number of Generate Dates Per Day" => $numberOfDates/date_diff($start, $end)->days,
+                "Dates" => $dates
+        ];
+    }
 }

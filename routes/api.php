@@ -245,6 +245,6 @@ Route::group([
     Route::post('preference-files', [PreferencesController::class, 'updatePreferenceFiles']);
     Route::resource('preferences', PreferencesController::class);
 
-    Route::get('testSeq', [SeedController::class, 'generateDateSequence']);
+    Route::get('testSeq', [SeedController::class, 'generateDateSequenceTest']);
 
 });
