@@ -119,8 +119,9 @@ class SeedController extends ResponsesController
 
     public function importSensorData(Request $request)
     {
+        $prevDays = $request->has('prevDays') ? (-1 * $request->get('prevDays')) : -7;
         $this->end_date = Carbon::now('GMT+3');
-        $this->start_date = Carbon::now('GMT+3')->addDays(-7);
+        $this->start_date = Carbon::now('GMT+3')->addDays($prevDays);
 
         $data = [];
         if (!$request->get('testData'))
@@ -302,7 +303,7 @@ class SeedController extends ResponsesController
     }
 
     public function generateDateSequenceTest() {
-        $startDate = '2024-08-01'; $endDate = '2024-08-11'; $numberOfDates = 400;
+        $startDate = '2024-08-01'; $endDate = '2024-08-03'; $numberOfDates = 400;
 
         // Convert start and end dates to Carbon instances
         $start = Carbon::parse($startDate);
